@@ -1,0 +1,370 @@
+﻿<Window x:Class="DmapGuide.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:m="clr-namespace:DmapGuide.Models"
+        Title="DMAP Guide"
+        Width="1440" Height="920"
+        MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/Assets/dmap.ico"
+        Background="{StaticResource DeskBrush}">
+
+    <Window.InputBindings>
+        <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}"/>
+        <KeyBinding Key="E" Modifiers="Ctrl" Command="{Binding ToggleEditCommand}"/>
+    </Window.InputBindings>
+
+    <Grid x:Name="Root">
+
+        <!-- ============================================================
+             CANDLELIGHT on the desk
+        ============================================================ -->
+        <Ellipse x:Name="GlowLeft" Width="1100" Height="1100" Margin="-480,-480,0,0" Opacity="0.7"
+                 HorizontalAlignment="Left" VerticalAlignment="Top" IsHitTestVisible="False">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#66FFB347" Offset="0"/>
+                    <GradientStop Color="#22FF9A2E" Offset="0.45"/>
+                    <GradientStop Color="#00FF9A2E" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+        <Ellipse x:Name="GlowRight" Width="900" Height="900" Margin="0,0,-420,-420" Opacity="0.5"
+                 HorizontalAlignment="Right" VerticalAlignment="Bottom" IsHitTestVisible="False">
+            <Ellipse.Fill>
+                <RadialGradientBrush>
+                    <GradientStop Color="#55FFB347" Offset="0"/>
+                    <GradientStop Color="#00FF9A2E" Offset="1"/>
+                </RadialGradientBrush>
+            </Ellipse.Fill>
+        </Ellipse>
+
+        <!-- ============================================================
+             THE BOOK
+        ============================================================ -->
+        <Grid x:Name="Book" Margin="40,28,40,52">
+
+            <!-- Dragon-hide binding -->
+            <Border CornerRadius="16" Background="{StaticResource DragonHideBrush}" BorderBrush="#1A0408" BorderThickness="2">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="45" ShadowDepth="16" Direction="285" Opacity="0.8"/>
+                </Border.Effect>
+            </Border>
+            <Border CornerRadius="16" Background="{StaticResource HideShadeBrush}" IsHitTestVisible="False"/>
+            <Border CornerRadius="12" Margin="8" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.2" Opacity="0.5"/>
+
+            <!-- Gilt corner pieces -->
+            <Path HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Opacity="0.8"
+                  Data="M 0,34 L 0,0 L 34,0 M 6,34 L 6,6 L 34,6 M 12,12 L 18,18"/>
+            <Path HorizontalAlignment="Right" VerticalAlignment="Top" Margin="4" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Opacity="0.8"
+                  Data="M 0,0 L 34,0 L 34,34 M 0,6 L 28,6 L 28,34 M 22,12 L 16,18"/>
+            <Path HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="4" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Opacity="0.8"
+                  Data="M 0,0 L 0,34 L 34,34 M 6,0 L 6,28 L 34,28 M 12,22 L 18,16"/>
+            <Path HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="4" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Opacity="0.8"
+                  Data="M 34,0 L 34,34 L 0,34 M 28,0 L 28,28 L 0,28 M 22,22 L 16,16"/>
+
+            <Grid x:Name="Pages" Margin="24,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="400"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Stacked page edges -->
+                <Border Grid.Column="0" Background="#BFA273" CornerRadius="6,0,0,6" Margin="-7,5,0,-5"/>
+                <Border Grid.Column="0" Background="#D8BF91" CornerRadius="6,0,0,6" Margin="-3,2,0,-2"/>
+                <Border Grid.Column="1" Background="#BFA273" CornerRadius="0,6,6,0" Margin="0,5,-7,-5"/>
+                <Border Grid.Column="1" Background="#D8BF91" CornerRadius="0,6,6,0" Margin="0,2,-3,-2"/>
+
+                <!-- ====================== LEFT PAGE ====================== -->
+                <Grid Grid.Column="0">
+                    <Border Background="{StaticResource ParchmentBrush}" CornerRadius="6,0,0,6"/>
+                    <Border Background="{DynamicResource ParchmentNoise}" CornerRadius="6,0,0,6" IsHitTestVisible="False"/>
+                    <Rectangle Width="44" HorizontalAlignment="Right" Fill="{StaticResource LeftGutterBrush}" IsHitTestVisible="False"/>
+
+                    <DockPanel Margin="26,22,34,18">
+                        <!-- Title -->
+                        <StackPanel DockPanel.Dock="Top">
+                            <StackPanel HorizontalAlignment="Center">
+                                <Image Source="{StaticResource DmapLogo}" Width="280" RenderOptions.BitmapScalingMode="HighQuality">
+                                    <Image.Effect>
+                                        <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.35"/>
+                                    </Image.Effect>
+                                </Image>
+                                <TextBlock Text="The Producer's Guide" FontFamily="{StaticResource TitleFont}" FontSize="17"
+                                           FontWeight="Bold" Foreground="{StaticResource RubricBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <TextBlock Style="{StaticResource Flourish}"/>
+
+                            <Button Style="{StaticResource LinkButton}" Command="{Binding ShowPrologueCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="❧" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Prologue" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Style="{StaticResource LinkButton}" Command="{Binding ShowScheduleCommand}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="☾" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Chronicle of Dates" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
+                                </StackPanel>
+                            </Button>
+
+                            <TextBlock Text="TABLE OF CONTENTS" Style="{StaticResource FieldLabel}" Margin="6,16,0,6"/>
+                        </StackPanel>
+
+                        <!-- Add / delete -->
+                        <StackPanel DockPanel.Dock="Bottom">
+                            <Rectangle Height="1" Fill="{StaticResource GoldBrush}" Opacity="0.6" Margin="0,8,0,10"/>
+                            <WrapPanel>
+                                <Button Style="{StaticResource TomeButton}" Content="+ Season" Command="{Binding AddSeasonCommand}"/>
+                                <Button Style="{StaticResource TomeButton}" Content="+ Campaign" Command="{Binding AddCampaignCommand}"/>
+                                <Button Style="{StaticResource TomeButton}" Content="+ Episode" Command="{Binding AddEpisodeCommand}"/>
+                                <Button Style="{StaticResource TomeButton}" Content="Delete" Command="{Binding DeleteCurrentCommand}"
+                                        ToolTip="Delete the page that's open"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <!-- Table of contents -->
+                        <TreeView x:Name="Toc" ItemsSource="{Binding Data.Seasons}"
+                                  Background="Transparent" BorderThickness="0"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                  PreviewMouseLeftButtonDown="Toc_PreviewMouseLeftButtonDown"
+                                  PreviewKeyDown="Toc_PreviewKeyDown"
+                                  SelectedItemChanged="Toc_SelectedItemChanged">
+                            <TreeView.Resources>
+                                <Style TargetType="TreeViewItem" BasedOn="{StaticResource TomeTreeItem}"/>
+
+                                <HierarchicalDataTemplate DataType="{x:Type m:Season}" ItemsSource="{Binding Campaigns}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="❖" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource RubricBrush}" Margin="0,0,7,0"/>
+                                        <TextBlock Text="{Binding DisplayName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="16"/>
+                                    </StackPanel>
+                                </HierarchicalDataTemplate>
+
+                                <HierarchicalDataTemplate DataType="{x:Type m:Campaign}" ItemsSource="{Binding Children}">
+                                    <DockPanel>
+                                        <TextBlock Text="⚔" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,7,0"/>
+                                        <TextBlock Text="{Binding DisplayName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="14"
+                                                   TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                </HierarchicalDataTemplate>
+
+                                <DataTemplate DataType="{x:Type m:CastRosterPage}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="♛" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource RubricBrush}"
+                                                   FontSize="13" Margin="0,0,7,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding DisplayName}" FontFamily="{StaticResource BodyFont}" FontSize="16"
+                                                   FontStyle="Italic" FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <DataTemplate DataType="{x:Type m:Episode}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" Margin="1,0,8,0" VerticalAlignment="Center"
+                                                 Fill="{Binding Status, Converter={StaticResource StatusBrush}}"
+                                                 ToolTip="{Binding Status}"/>
+                                        <TextBlock Text="{Binding DisplayName}" FontFamily="{StaticResource BodyFont}" FontSize="16"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </TreeView.Resources>
+                        </TreeView>
+                    </DockPanel>
+                </Grid>
+
+                <!-- ====================== RIGHT PAGE ====================== -->
+                <Grid x:Name="RightLeaf" Grid.Column="1">
+                    <Border Background="{StaticResource ParchmentBrush}" CornerRadius="0,6,6,0"/>
+                    <Border Background="{DynamicResource ParchmentNoise}" CornerRadius="0,6,6,0" IsHitTestVisible="False"/>
+                    <Rectangle Width="54" HorizontalAlignment="Left" Fill="{StaticResource RightGutterBrush}" IsHitTestVisible="False"/>
+
+                    <!-- Arcane glow around the page while writing -->
+                    <Border x:Name="EditGlow" CornerRadius="0,6,6,0" BorderThickness="2" BorderBrush="{StaticResource ArcaneBrush}"
+                            IsHitTestVisible="False"
+                            Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#9A7BFF" BlurRadius="16" ShadowDepth="0" Opacity="0.9"/>
+                        </Border.Effect>
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.45" To="1" Duration="0:0:1.6"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
+                    </Border>
+
+                    <Grid Margin="50,20,32,14">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header: where am I + edit button -->
+                        <DockPanel Margin="0,0,0,8">
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock Text="{Binding StatusText}" FontFamily="{StaticResource BodyFont}" FontStyle="Italic" FontSize="14"
+                                           Foreground="{StaticResource InkFadedBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Button Command="{Binding ToggleEditCommand}"
+                                        Visibility="{Binding CanEdit, Converter={StaticResource BoolToVis}}"
+                                        ToolTip="Ctrl+E">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource TomeButton}">
+                                            <Setter Property="Content" Value="✎  Edit Page"/>
+                                            <Setter Property="Margin" Value="0"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                    <Setter Property="Content" Value="✓  Done"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Breadcrumb}" FontFamily="{StaticResource HeadingFont}" FontSize="12"
+                                       Foreground="{StaticResource InkFadedBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                        </DockPanel>
+                        <Rectangle Height="1" Fill="{StaticResource GoldBrush}" Opacity="0.5" VerticalAlignment="Bottom"/>
+
+                        <!-- The page itself -->
+                        <ScrollViewer x:Name="PageScroller" Grid.Row="1" Padding="0,14,0,0"
+                                      VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                      PreviewMouseWheel="PageScroller_PreviewMouseWheel">
+                            <ContentPresenter x:Name="PageContent" Content="{Binding CurrentPage}"/>
+                        </ScrollViewer>
+
+                        <TextBlock Grid.Row="2" Text="— ❦ —" HorizontalAlignment="Center" Margin="0,6,0,0"
+                                   FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Opacity="0.8"/>
+                    </Grid>
+                </Grid>
+
+                <!-- Page-turn: a snapshot of the old page folds away toward the spine -->
+                <Grid x:Name="TurnLeaf" Grid.Column="1" Visibility="Collapsed" IsHitTestVisible="False"
+                      RenderTransformOrigin="0,0.5">
+                    <Grid.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform x:Name="TurnScale"/>
+                            <SkewTransform x:Name="TurnSkew"/>
+                        </TransformGroup>
+                    </Grid.RenderTransform>
+                    <Image x:Name="TurnImage" Stretch="Fill"/>
+                    <Rectangle x:Name="TurnShade" Opacity="0">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#00000000" Offset="0"/>
+                                <GradientStop Color="#99301A08" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+            </Grid>
+
+            <!-- Ribbon bookmark -->
+            <Path HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="470,0,0,-50" Fill="{StaticResource RibbonBrush}"
+                  Data="M 0,0 L 22,0 L 22,74 L 11,62 L 0,74 Z" IsHitTestVisible="False">
+                <Path.Effect>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="3" Opacity="0.6"/>
+                </Path.Effect>
+            </Path>
+
+            <!-- ============================================================
+                 FRONT COVER: swings open like two doors on startup
+            ============================================================ -->
+            <Grid x:Name="Cover" Cursor="Hand" MouseLeftButtonDown="Cover_MouseLeftButtonDown">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="424"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Back door (left) -->
+                <Grid x:Name="LeftDoor" RenderTransformOrigin="0,0.5">
+                    <Grid.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform x:Name="LeftDoorScale"/>
+                            <SkewTransform x:Name="LeftDoorSkew"/>
+                        </TransformGroup>
+                    </Grid.RenderTransform>
+                    <Border CornerRadius="16,0,0,16" Background="{StaticResource DragonHideBrush}" BorderBrush="#1A0408" BorderThickness="2,2,0,2"/>
+                    <Border CornerRadius="16,0,0,16" Background="{StaticResource HideShadeBrush}"/>
+                    <Border CornerRadius="12,0,0,12" Margin="10,10,0,10" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.5,1.5,0,1.5" Opacity="0.7"/>
+                    <!-- The dragon from the logo, embossed faintly on the back cover -->
+                    <Image Width="150" Opacity="0.3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image.Source>
+                            <CroppedBitmap Source="{StaticResource DmapLogo}" SourceRect="0,0,126,132"/>
+                        </Image.Source>
+                    </Image>
+                    <Rectangle Width="30" HorizontalAlignment="Right">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#00000000" Offset="0"/>
+                                <GradientStop Color="#88000000" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+
+                <!-- Front door (right) with the title -->
+                <Grid x:Name="RightDoor" Grid.Column="1" RenderTransformOrigin="1,0.5">
+                    <Grid.RenderTransform>
+                        <TransformGroup>
+                            <ScaleTransform x:Name="RightDoorScale"/>
+                            <SkewTransform x:Name="RightDoorSkew"/>
+                        </TransformGroup>
+                    </Grid.RenderTransform>
+                    <Border CornerRadius="0,16,16,0" Background="{StaticResource DragonHideBrush}" BorderBrush="#1A0408" BorderThickness="0,2,2,2"/>
+                    <Border CornerRadius="0,16,16,0" Background="{StaticResource HideShadeBrush}"/>
+                    <Border CornerRadius="0,12,12,0" Margin="0,10,10,10" BorderBrush="{StaticResource GoldBrush}" BorderThickness="0,1.5,1.5,1.5" Opacity="0.7"/>
+                    <Border CornerRadius="0,8,8,0" Margin="0,22,22,22" BorderBrush="{StaticResource GoldBrush}" BorderThickness="0,0.8,0.8,0.8" Opacity="0.45"/>
+                    <Rectangle Width="30" HorizontalAlignment="Left">
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Color="#88000000" Offset="0"/>
+                                <GradientStop Color="#00000000" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <!-- Logo on a dark plate so it reads cleanly over the scales -->
+                        <Border CornerRadius="10" Padding="34,26" Background="#C0140408"
+                                BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.5">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#FF2A2A" BlurRadius="40" ShadowDepth="0" Opacity="0.55"/>
+                            </Border.Effect>
+                            <Image Source="{StaticResource DmapLogo}" Width="460" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+                        <TextBlock Text="The Producer's Guide" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="34"
+                                   Foreground="{StaticResource GoldLightBrush}" HorizontalAlignment="Center" Margin="0,26,0,0">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="#000000" BlurRadius="8" ShadowDepth="2" Opacity="0.9"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                        <TextBlock Text="click to open the tome" FontFamily="{StaticResource BodyFont}" FontStyle="Italic" FontSize="15"
+                                   Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" Margin="0,30,0,0" Opacity="0.6"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Light spilling from the seam as it opens -->
+                <Ellipse x:Name="SeamGlow" Grid.ColumnSpan="2" Width="60" Height="700" Margin="394,0,0,0" Opacity="0"
+                         HorizontalAlignment="Left" IsHitTestVisible="False" RenderTransformOrigin="0.5,0.5">
+                    <Ellipse.RenderTransform>
+                        <ScaleTransform x:Name="SeamScale"/>
+                    </Ellipse.RenderTransform>
+                    <Ellipse.Fill>
+                        <RadialGradientBrush>
+                            <GradientStop Color="#FFFFF2C4" Offset="0"/>
+                            <GradientStop Color="#88FFD27A" Offset="0.4"/>
+                            <GradientStop Color="#00FFD27A" Offset="1"/>
+                        </RadialGradientBrush>
+                    </Ellipse.Fill>
+                </Ellipse>
+            </Grid>
+        </Grid>
+
+        <!-- Sparkles burst from the spine as the cover opens -->
+        <Canvas x:Name="SparkleCanvas" IsHitTestVisible="False"/>
+    </Grid>
+</Window>

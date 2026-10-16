@@ -1,0 +1,489 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:conv="clr-namespace:DmapGuide.Converters">
+
+    <!-- ============================================================
+         FONTS
+    ============================================================ -->
+    <FontFamily x:Key="TitleFont">pack://application:,,,/Fonts/#Cinzel Decorative, Palatino Linotype</FontFamily>
+    <FontFamily x:Key="HeadingFont">pack://application:,,,/Fonts/#Cinzel, Palatino Linotype</FontFamily>
+    <FontFamily x:Key="BodyFont">pack://application:,,,/Fonts/#EB Garamond, Palatino Linotype, Georgia</FontFamily>
+    <FontFamily x:Key="SymbolFont">Segoe UI Symbol</FontFamily>
+
+    <!-- ============================================================
+         COLOURS
+    ============================================================ -->
+    <Color x:Key="InkColor">#2E1F14</Color>
+    <Color x:Key="GoldColor">#C9A24A</Color>
+
+    <SolidColorBrush x:Key="InkBrush" Color="#2E1F14"/>
+    <SolidColorBrush x:Key="InkSoftBrush" Color="#5A4431"/>
+    <SolidColorBrush x:Key="InkFadedBrush" Color="#8C7A63"/>
+    <SolidColorBrush x:Key="RubricBrush" Color="#9E141E"/>
+    <SolidColorBrush x:Key="GoldBrush" Color="#C9A24A"/>
+    <SolidColorBrush x:Key="GoldLightBrush" Color="#E8CF8A"/>
+    <SolidColorBrush x:Key="ArcaneBrush" Color="#5B3E8C"/>
+    <SolidColorBrush x:Key="CardBrush" Color="#26C9A86A"/>
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#55876A45"/>
+    <SolidColorBrush x:Key="EditFieldBrush" Color="#40FFFBEF"/>
+
+    <RadialGradientBrush x:Key="DeskBrush" Center="0.5,0.45" GradientOrigin="0.5,0.4" RadiusX="0.8" RadiusY="0.8">
+        <GradientStop Color="#3B2717" Offset="0"/>
+        <GradientStop Color="#1E140C" Offset="0.7"/>
+        <GradientStop Color="#0E0905" Offset="1"/>
+    </RadialGradientBrush>
+
+    <LinearGradientBrush x:Key="LeatherBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#7A1424" Offset="0"/>
+        <GradientStop Color="#55101E" Offset="0.5"/>
+        <GradientStop Color="#360A16" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Dragon-scale hide for the binding and cover -->
+    <BitmapImage x:Key="DmapLogo" UriSource="pack://application:,,,/Assets/dmap-logo.png"/>
+    <!-- Drawn at one fixed size on every surface (big enough to cover the whole cover)
+         so the scales are the same size on both halves of the book -->
+    <ImageBrush x:Key="DragonHideBrush" ImageSource="pack://application:,,,/Assets/dragon-scales.jpg"
+                Stretch="Fill" ViewportUnits="Absolute" Viewport="-100,-800,1500,3000"/>
+
+    <!-- Darkens the hide toward the edges so gold tooling and the logo stand out -->
+    <RadialGradientBrush x:Key="HideShadeBrush" Center="0.5,0.45" GradientOrigin="0.5,0.4" RadiusX="0.75" RadiusY="0.75">
+        <GradientStop Color="#33000000" Offset="0"/>
+        <GradientStop Color="#77000000" Offset="0.7"/>
+        <GradientStop Color="#BB000000" Offset="1"/>
+    </RadialGradientBrush>
+
+    <RadialGradientBrush x:Key="ParchmentBrush" Center="0.5,0.5" GradientOrigin="0.45,0.4" RadiusX="0.75" RadiusY="0.75">
+        <GradientStop Color="#F7ECD2" Offset="0"/>
+        <GradientStop Color="#EEDDB6" Offset="0.55"/>
+        <GradientStop Color="#DCC293" Offset="0.9"/>
+        <GradientStop Color="#C9AA76" Offset="1"/>
+    </RadialGradientBrush>
+
+    <!-- Shadow in the book's gutter -->
+    <LinearGradientBrush x:Key="LeftGutterBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#00000000" Offset="0"/>
+        <GradientStop Color="#2A3A2410" Offset="0.6"/>
+        <GradientStop Color="#663A2410" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="RightGutterBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#773A2410" Offset="0"/>
+        <GradientStop Color="#2A3A2410" Offset="0.35"/>
+        <GradientStop Color="#00000000" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="RibbonBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#7A1418" Offset="0"/>
+        <GradientStop Color="#B3262B" Offset="0.5"/>
+        <GradientStop Color="#7A1418" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- ============================================================
+         CONVERTERS
+    ============================================================ -->
+    <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+    <conv:InverseBoolConverter x:Key="Not"/>
+    <conv:EmptyToCollapsedConverter x:Key="EmptyToCollapsed"/>
+    <conv:DateTextConverter x:Key="DateText"/>
+    <conv:ImageConverter x:Key="Image"/>
+    <conv:StatusToBrushConverter x:Key="StatusBrush"/>
+
+    <!-- ============================================================
+         TEXT
+    ============================================================ -->
+    <Style x:Key="PageKicker" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{StaticResource InkFadedBrush}"/>
+        <Setter Property="Margin" Value="0,0,0,2"/>
+    </Style>
+
+    <Style x:Key="PageTitle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource TitleFont}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="34"/>
+        <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="SectionHeader" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="19"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource InkFadedBrush}"/>
+        <Setter Property="Margin" Value="2,0,0,1"/>
+    </Style>
+
+    <Style x:Key="Body" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <!-- Ornamental divider under section headers -->
+    <Style x:Key="Flourish" TargetType="TextBlock">
+        <Setter Property="Text" Value="─────── ❦ ───────"/>
+        <Setter Property="FontFamily" Value="{StaticResource SymbolFont}"/>
+        <Setter Property="Foreground" Value="{StaticResource GoldBrush}"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Margin" Value="0,10,0,10"/>
+    </Style>
+
+    <!-- ============================================================
+         INK BOX: a TextBox that reads like written text, and turns into
+         an editable field in Edit mode. Tag = hint shown when empty.
+    ============================================================ -->
+    <Style x:Key="InkBox" TargetType="TextBox">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="CaretBrush" Value="{StaticResource RubricBrush}"/>
+        <Setter Property="SelectionBrush" Value="{StaticResource GoldBrush}"/>
+        <Setter Property="Padding" Value="3,1"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="IsReadOnly"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource Not}}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TextBox">
+                    <Border x:Name="Bd"
+                            Background="{StaticResource EditFieldBrush}"
+                            BorderBrush="{StaticResource InkFadedBrush}"
+                            BorderThickness="0,0,0,1"
+                            CornerRadius="3,3,0,0"
+                            Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <TextBlock x:Name="Hint"
+                                       Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Foreground="{StaticResource InkFadedBrush}"
+                                       FontStyle="Italic"
+                                       TextWrapping="Wrap"
+                                       Margin="2,0"
+                                       Visibility="Collapsed"
+                                       IsHitTestVisible="False"/>
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0" VerticalScrollBarVisibility="Disabled"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="Hint" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsReadOnly" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="Transparent"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="Transparent"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource RubricBrush}"/>
+                            <Setter TargetName="Bd" Property="Background" Value="#70FFFBEF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsReadOnly" Value="True">
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="Cursor" Value="Arrow"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="InkBoxMulti" TargetType="TextBox" BasedOn="{StaticResource InkBox}">
+        <Setter Property="AcceptsReturn" Value="True"/>
+        <Setter Property="MinHeight" Value="28"/>
+    </Style>
+
+    <Style x:Key="InkTitleBox" TargetType="TextBox" BasedOn="{StaticResource InkBox}">
+        <Setter Property="FontFamily" Value="{StaticResource TitleFont}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="32"/>
+        <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+    </Style>
+
+    <!-- Visible only in Edit mode / only when reading -->
+    <Style x:Key="EditOnly" TargetType="FrameworkElement">
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+    </Style>
+    <Style x:Key="ViewOnly" TargetType="FrameworkElement">
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+    </Style>
+
+    <Style x:Key="TomeDatePicker" TargetType="DatePicker">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Background" Value="{StaticResource EditFieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InkFadedBrush}"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="Padding" Value="2"/>
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+    </Style>
+
+    <!-- ============================================================
+         BUTTONS
+    ============================================================ -->
+    <!-- Gilded leather button -->
+    <Style x:Key="TomeButton" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource GoldLightBrush}"/>
+        <Setter Property="Padding" Value="10,5"/>
+        <Setter Property="Margin" Value="0,0,6,6"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="4" BorderThickness="1"
+                            BorderBrush="{StaticResource GoldBrush}"
+                            Background="{StaticResource LeatherBrush}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect Color="#FFD27A" BlurRadius="12" ShadowDepth="0" Opacity="0.85"/>
+                                </Setter.Value>
+                            </Setter>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource GoldLightBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Bd" Property="RenderTransform">
+                                <Setter.Value>
+                                    <TranslateTransform Y="1"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Quiet text link, for page-to-page links -->
+    <Style x:Key="LinkButton" TargetType="Button">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="17"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="6,4">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#33C9A24A"/>
+                            <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Small round remove button (edit mode) -->
+    <Style x:Key="RemoveButton" TargetType="Button">
+        <Setter Property="Width" Value="22"/>
+        <Setter Property="Height" Value="22"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="ToolTip" Value="Remove"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" CornerRadius="11" Background="#228B2A1E" BorderBrush="{StaticResource RubricBrush}" BorderThickness="1">
+                        <TextBlock Text="✕" FontSize="11" Foreground="{StaticResource RubricBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#558B2A1E"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- "+ Add ..." button shown next to section headers in edit mode -->
+    <Style x:Key="AddButton" TargetType="Button" BasedOn="{StaticResource TomeButton}">
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="Margin" Value="12,0,0,0"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+    </Style>
+
+    <!-- ============================================================
+         CARDS / BADGES
+    ============================================================ -->
+    <Style x:Key="Card" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="0,0,12,12"/>
+    </Style>
+
+    <!-- ============================================================
+         TABLE OF CONTENTS TREE
+    ============================================================ -->
+    <Style x:Key="ExpanderToggle" TargetType="ToggleButton">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="Transparent">
+                        <Path x:Name="Arrow" Data="M 3,1 L 9,6 L 3,11 Z" Fill="{StaticResource InkSoftBrush}"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform>
+                                <RotateTransform/>
+                            </Path.RenderTransform>
+                        </Path>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Arrow" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="90"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Arrow" Property="Fill" Value="{StaticResource RubricBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="TomeTreeItem" TargetType="TreeViewItem">
+        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TreeViewItem">
+                    <StackPanel>
+                        <Border x:Name="Bd" CornerRadius="4" Padding="2,3" Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="18"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <ToggleButton x:Name="Expander" Style="{StaticResource ExpanderToggle}" ClickMode="Press"
+                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ItemsPresenter x:Name="ItemsHost" Margin="14,0,0,0"/>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsExpanded" Value="False">
+                            <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                        </Trigger>
+                        <Trigger Property="HasItems" Value="False">
+                            <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                        </Trigger>
+                        <Trigger SourceName="Bd" Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#22C9A24A"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#55C9A24A"/>
+                            <Setter TargetName="Bd" Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect Color="#FFD27A" BlurRadius="10" ShadowDepth="0" Opacity="0.6"/>
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============================================================
+         SCROLLBARS: thin ink-coloured bars instead of grey Windows ones
+    ============================================================ -->
+    <Style TargetType="ScrollBar">
+        <Setter Property="Width" Value="8"/>
+        <Setter Property="MinWidth" Value="8"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <Track.Thumb>
+                            <Thumb>
+                                <Thumb.Template>
+                                    <ControlTemplate TargetType="Thumb">
+                                        <Border CornerRadius="4" Background="#665A4431" Margin="1"/>
+                                    </ControlTemplate>
+                                </Thumb.Template>
+                            </Thumb>
+                        </Track.Thumb>
+                    </Track>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="8"/>
+                <Setter Property="MinHeight" Value="8"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style TargetType="CheckBox">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="0,0,16,0"/>
+    </Style>
+
+    <Style TargetType="ToolTip">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Background" Value="#F7ECD2"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource GoldBrush}"/>
+    </Style>
+
+</ResourceDictionary>
