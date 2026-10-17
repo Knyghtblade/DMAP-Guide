@@ -170,6 +170,7 @@ public partial class MainViewModel : ObservableObject
             store.StartWatching();
 
             _settings = settings;
+            _syncProblem = null;
             _readOnlyAfterLoadError = readOnly;
             _selectedNode = null;
             IsEditing = false;
@@ -423,6 +424,12 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Status line: who's editing this page, or who last changed it.</summary>
     private async Task ShowPageInfoAsync()
     {
+        // While other people's changes can't be fetched, say so on every page rather than look up to date.
+        if (_syncProblem != null)
+        {
+            StatusText = _syncProblem;
+            return;
+        }
         if (_store == null || EditTarget is not TreeNode node) return;
 
         if (await _store.ReadLockAsync(node.Id) is EditLock other && other.IsSomeoneElse(UserName))
@@ -433,7 +440,8 @@ public partial class MainViewModel : ObservableObject
             StatusText = "";
     }
 
-    private bool _syncFailing;
+    /// <summary>Why other people's changes can't be fetched right now (null when all is well).</summary>
+    private string? _syncProblem;
 
     /// <summary>Pick up pages other people have saved.</summary>
     public async Task SyncNowAsync()
@@ -445,13 +453,15 @@ public partial class MainViewModel : ObservableObject
         try
         {
             result = await _store.SyncAsync(Data);
-            if (_syncFailing) StatusText = "Connected to the shared guide again";
-            _syncFailing = false;
+            if (_syncProblem != null) StatusText = "Connected to the shared guide again";
+            _syncProblem = null;
         }
         catch (Exception ex)
         {
-            if (!_syncFailing) StatusText = $"Can't check for other people's changes right now: {Friendly(ex)}";
-            _syncFailing = true;
+            _syncProblem = ex is DmapApiException { StatusCode: System.Net.HttpStatusCode.Unauthorized }
+                ? "⚠ Not up to date: the access key isn't accepted any more. Enter the current key in Settings."
+                : $"⚠ Not up to date: {Friendly(ex)}";
+            StatusText = _syncProblem;
             return;
         }
         finally

@@ -99,6 +99,20 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task While_changes_cant_be_fetched_every_page_says_so()
+    {
+        var server = new TestServer();
+        var (vm, _) = await Connected(server);
+
+        server.Dispose(); // the server goes away
+        await vm.SyncNowAsync();
+        Assert.StartsWith("⚠ Not up to date", vm.StatusText);
+
+        await vm.NavigateAsync(vm.Data.AllEpisodes.First());
+        Assert.StartsWith("⚠ Not up to date", vm.StatusText);
+    }
+
+    [Fact]
     public async Task Someone_elses_save_is_picked_up_without_leaving_the_page()
     {
         using var server = new TestServer();
