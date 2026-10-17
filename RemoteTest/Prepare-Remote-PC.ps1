@@ -24,7 +24,19 @@ try {
 
     $listener = Get-NetTCPConnection -LocalPort 5080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($listener) {
-        throw 'The API is already running on port 5080. Find its terminal and press Ctrl+C, then double-click this file again.'
+        $owner = Get-Process -Id $listener.OwningProcess -ErrorAction SilentlyContinue
+        if ($owner -and $owner.ProcessName -eq 'DmapApi') {
+            # Usually the local test server; the remote test needs to restart it with the private access key.
+            $answer = Read-Host 'A DMAP API window is already running (probably Run Local Test Server). Stop it and continue? Type Y to continue'
+            if ($answer -notmatch '^[Yy]') {
+                throw 'The DMAP API is still running. Close its window, then double-click this file again.'
+            }
+            Stop-Process -Id $owner.Id -Force
+            Start-Sleep -Seconds 2
+        }
+        else {
+            throw 'Another program is using port 5080, which the DMAP API needs. Close it, then double-click this file again.'
+        }
     }
 
     if (-not (Test-Path $apiProject) -or -not (Test-Path $desktopProject)) {
