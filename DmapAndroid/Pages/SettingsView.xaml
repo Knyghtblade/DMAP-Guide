@@ -23,10 +23,16 @@
         <VerticalStackLayout IsVisible="{Binding UseServer}" Spacing="2">
             <Label Text="SERVER ADDRESS" Style="{StaticResource FieldLabel}"/>
             <Entry Style="{StaticResource FormEntry}" Text="{Binding ServerAddress}" Placeholder="e.g. https://name.tailnet.ts.net/" Keyboard="Url"
+                   IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
                    MaximumWidthRequest="520" HorizontalOptions="Fill"/>
             <Label Text="ACCESS KEY" Style="{StaticResource FieldLabel}" Margin="2,8,0,0"/>
-            <Entry Style="{StaticResource FormEntry}" Text="{Binding AccessKey}" IsPassword="True" Placeholder="Access key"
-                   MaximumWidthRequest="520" HorizontalOptions="Fill"/>
+            <Entry Style="{StaticResource FormEntry}" Text="{Binding AccessKey}" IsPassword="{Binding ShowKey, Converter={StaticResource Not}}"
+                   Placeholder="Access key" Keyboard="Plain" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                   FontFamily="monospace" MaximumWidthRequest="520" HorizontalOptions="Fill"/>
+            <HorizontalStackLayout>
+                <CheckBox IsChecked="{Binding ShowKey}" VerticalOptions="Center"/>
+                <Label Text="Show key" Style="{StaticResource Body}" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
             <Label Style="{StaticResource EmptyNote}" Text="Ask the person who runs the shared guide for its address and access key."/>
         </VerticalStackLayout>
 

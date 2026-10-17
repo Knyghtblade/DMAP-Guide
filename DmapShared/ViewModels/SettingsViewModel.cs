@@ -21,6 +21,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string _serverAddress;
     [ObservableProperty] private string _accessKey;
+
+    /// <summary>Show the access key as text, to check it was typed correctly.</summary>
+    [ObservableProperty] private bool _showKey;
     [ObservableProperty] private string _problem = "";
     [ObservableProperty] private bool _isWorking;
 

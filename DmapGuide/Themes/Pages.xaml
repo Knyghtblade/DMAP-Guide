@@ -796,7 +796,12 @@
                 <StackPanel Style="{StaticResource Field}">
                     <TextBlock Text="ACCESS KEY" Style="{StaticResource FieldLabel}"/>
                     <PasswordBox svc:PasswordBoxHelper.BoundPassword="{Binding AccessKey, Mode=TwoWay}" Style="{StaticResource FormPassword}"
-                                 MaxWidth="520" MinWidth="380" HorizontalAlignment="Left"/>
+                                 MaxWidth="520" MinWidth="380" HorizontalAlignment="Left"
+                                 Visibility="{Binding ShowKey, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                    <TextBox Style="{StaticResource FormBox}" Text="{Binding AccessKey, UpdateSourceTrigger=PropertyChanged}"
+                             FontFamily="Consolas" MaxWidth="520" MinWidth="380" HorizontalAlignment="Left"
+                             Visibility="{Binding ShowKey, Converter={StaticResource BoolToVis}}"/>
+                    <CheckBox Content="Show key" IsChecked="{Binding ShowKey}" Margin="0,6,0,0"/>
                 </StackPanel>
                 <TextBlock Style="{StaticResource EmptyNote}"
                            Text="Ask the person who runs the shared guide for its address and access key."/>
