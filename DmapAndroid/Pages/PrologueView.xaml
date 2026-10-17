@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.PrologueView"
+             x:DataType="vm:PrologueViewModel">
+    <VerticalStackLayout Spacing="2" Padding="2,6,6,24">
+        <Image x:Name="Logo" WidthRequest="220" HeightRequest="80" Aspect="AspectFit" HorizontalOptions="Center"/>
+        <Label Text="The Producer's Guide" FontFamily="DmapDisplay" FontSize="21" TextColor="{StaticResource RubricColor}"
+               HorizontalOptions="Center" Margin="0,6,0,0"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Grid ColumnDefinitions="*,*,*" Margin="0,0,0,8">
+            <VerticalStackLayout HorizontalOptions="Center">
+                <Label Text="{Binding SeasonCount}" FontFamily="DmapDisplay" FontSize="30" TextColor="{StaticResource RubricColor}" HorizontalOptions="Center"/>
+                <Label Text="SEASONS" Style="{StaticResource FieldLabel}" HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="1" HorizontalOptions="Center">
+                <Label Text="{Binding CampaignCount}" FontFamily="DmapDisplay" FontSize="30" TextColor="{StaticResource RubricColor}" HorizontalOptions="Center"/>
+                <Label Text="CAMPAIGNS" Style="{StaticResource FieldLabel}" HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="2" HorizontalOptions="Center">
+                <Label Text="{Binding EpisodeCount}" FontFamily="DmapDisplay" FontSize="30" TextColor="{StaticResource RubricColor}" HorizontalOptions="Center"/>
+                <Label Text="EPISODES" Style="{StaticResource FieldLabel}" HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+        </Grid>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout>
+                    <Label Text="⚔ CURRENT CAMPAIGN" Style="{StaticResource FieldLabel}"/>
+                    <c:LinkRow Target="{Binding CurrentCampaign}">
+                        <Label Text="{Binding CurrentCampaign.DisplayName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="15" TextColor="{StaticResource InkColor}"/>
+                    </c:LinkRow>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Card}">
+                <VerticalStackLayout>
+                    <Label Text="✧ LATEST EPISODE" Style="{StaticResource FieldLabel}"/>
+                    <c:LinkRow Target="{Binding LatestEpisode}">
+                        <Label Text="{Binding LatestEpisode.DisplayName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="15" TextColor="{StaticResource InkColor}"/>
+                    </c:LinkRow>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Label Text="Coming Up" Style="{StaticResource SectionHeader}" Margin="0,12,0,0"/>
+        <BoxView Style="{StaticResource Rule}"/>
+        <Label Style="{StaticResource EmptyNote}"
+               Text="No upcoming dates yet. Add filming and air dates on episode pages and they'll appear here."
+               IsVisible="{Binding Upcoming, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Upcoming}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:ScheduleEvent">
+                    <c:EventRow/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+        <Label Text="Using this Tome" Style="{StaticResource SectionHeader}" Margin="0,16,0,0"/>
+        <BoxView Style="{StaticResource Rule}"/>
+        <Label FontSize="14">
+            <Label.FormattedText>
+                <FormattedString>
+                    <Span Text="Choose a season, campaign or episode from the Table of Contents to open its page. Press " FontFamily="DmapBody" TextColor="{StaticResource InkColor}"/>
+                    <Span Text="Edit Page" FontFamily="DmapBody" FontAttributes="Bold" TextColor="{StaticResource InkColor}"/>
+                    <Span Text=" to write in the tome; press " FontFamily="DmapBody" TextColor="{StaticResource InkColor}"/>
+                    <Span Text="Done" FontFamily="DmapBody" FontAttributes="Bold" TextColor="{StaticResource InkColor}"/>
+                    <Span Text=" to seal your changes. New episodes copy the cast and Dungeon Master from the previous episode." FontFamily="DmapBody" TextColor="{StaticResource InkColor}"/>
+                </FormattedString>
+            </Label.FormattedText>
+        </Label>
+
+        <Label Margin="0,14,0,0" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}" Text="{Binding LocationText}"/>
+        <c:TomeButton Text="Settings…" FontSize="10" Margin="0,6,0,0" Clicked="OnSettings"/>
+    </VerticalStackLayout>
+</ContentView>

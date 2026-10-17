@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- One date in the Chronicle (and Prologue): day, FILMING / AIRING badge, what and where. -->
+<c:LinkRow xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+           xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+           xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+           xmlns:c="clr-namespace:DmapAndroid.Controls"
+           x:Class="DmapAndroid.Controls.EventRow"
+           x:DataType="vm:ScheduleEvent"
+           Target="{Binding Target}">
+    <Grid ColumnDefinitions="44,92,*" x:Name="Row">
+        <VerticalStackLayout HorizontalOptions="Center">
+            <Label Text="{Binding Day}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="20"
+                   HorizontalOptions="Center" TextColor="{StaticResource RubricColor}"/>
+            <Label Text="{Binding Weekday}" FontFamily="DmapHeading" FontSize="10" HorizontalOptions="Center"
+                   TextColor="{StaticResource InkFadedColor}" Margin="0,-4,0,0"/>
+        </VerticalStackLayout>
+        <Border x:Name="Badge" Grid.Column="1" StrokeThickness="0" StrokeShape="RoundRectangle 9" Padding="7,2" Margin="4,0"
+                VerticalOptions="Center" HorizontalOptions="Start" BackgroundColor="{StaticResource AiredColor}">
+            <Label x:Name="BadgeText" Text="☾ AIRING" TextColor="#F7ECD2" FontSize="10" FontAttributes="Bold" FontFamily="DmapHeading"/>
+        </Border>
+        <VerticalStackLayout Grid.Column="2" VerticalOptions="Center">
+            <Label Text="{Binding Heading}" Style="{StaticResource Body}" LineBreakMode="TailTruncation"/>
+            <Label Text="{Binding Subline}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"
+                   LineBreakMode="TailTruncation"/>
+        </VerticalStackLayout>
+    </Grid>
+</c:LinkRow>

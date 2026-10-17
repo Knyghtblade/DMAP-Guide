@@ -1,4 +1,5 @@
-﻿using DmapGuide.ViewModels;
+﻿using DmapGuide.Services;
+using DmapShared.ViewModels;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,12 +20,18 @@ public partial class MainWindow : Window
     private RenderTargetBitmap? _snapshot;
     private bool _coverOpening;
     private bool _coverOpened;
+    private bool _closing;
 
     public MainWindow()
     {
         InitializeComponent();
 
-        _vm = new MainViewModel { CommitPendingEdits = CommitFocusedTextBox };
+        // "--data <folder>" opens a different guide folder for this run only.
+        var args = Environment.GetCommandLineArgs();
+        int i = Array.IndexOf(args, "--data");
+        string? folder = i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+
+        _vm = new MainViewModel(new WpfPlatform(), new AppSettings(), folder) { CommitPendingEdits = CommitFocusedTextBox };
         DataContext = _vm;
 
         _vm.Navigating += SnapshotPage;
@@ -34,15 +41,23 @@ public partial class MainWindow : Window
         Closing += OnClosing;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // The book stays closed until the cover is clicked.
+        // The book stays closed until the cover is clicked; the guide opens behind it.
         StartAmbience();
+        await _vm.StartAsync();
     }
 
-    private void OnClosing(object? sender, CancelEventArgs e)
+    private async void OnClosing(object? sender, CancelEventArgs e)
     {
-        _vm.Shutdown();
+        if (_closing) return;
+
+        // Finish saving (it may need the network) before the window goes.
+        e.Cancel = true;
+        _closing = true;
+        IsEnabled = false;
+        await _vm.ShutdownAsync();
+        Close();
     }
 
     // The text box being typed in only pushes its value on losing focus;
@@ -77,7 +92,7 @@ public partial class MainWindow : Window
         if (e.ClickCount == 2)
             item.IsExpanded = !item.IsExpanded;
         else
-            _vm.Navigate(item.DataContext);
+            _ = _vm.NavigateAsync(item.DataContext);
     }
 
     private void Toc_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -88,7 +103,7 @@ public partial class MainWindow : Window
 
     private void Toc_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        if (_tocKeyNavigation) _vm.Navigate(e.NewValue);
+        if (_tocKeyNavigation) _ = _vm.NavigateAsync(e.NewValue);
     }
 
     private static T? FindAncestor<T>(DependencyObject? d) where T : DependencyObject

@@ -1,59 +1,47 @@
 # DMAP API
 
-The API uses SQLite for the structured guide and keeps the whole-guide JSON document synchronized for compatibility.
+The shared guide server. It keeps the guide one record per page (the show details, and each season, campaign and episode) in SQLite, along with the pictures and the "someone is editing this page" markers. The desktop and phone apps both use it through `DmapShared`.
 
-## Desktop test
+## Where the data lives
 
-Start the API from the repository root. Use a long random key in place of the example and keep it private.
+`%LOCALAPPDATA%\DMAP Guide Server\` (`dmap.db` and `images\`), or the folder set in `Dmap:DataFolder`. The first time it starts, the server copies across a guide from the first server version (`bin\…\data\dmap.db`) if it finds one, leaving the old file untouched.
 
-```powershell
-$env:ASPNETCORE_ENVIRONMENT = "Development"
-$env:Dmap__ApiKey = "replace-with-a-long-random-key"
-dotnet run --project .\DmapApi\DmapApi.csproj -- --urls http://127.0.0.1:5080
-```
+## Access keys
 
-Open the settings file with `notepad "$env:APPDATA\DMAP Guide\settings.json"`. Set these properties, preserving existing `DataFolder` and `UserName` values:
+Every request needs an `X-Api-Key` header. Each key has its own role, `viewer` (read only), `editor` or `admin`. Nobody can choose their own role.
 
-```json
-{
-	"ApiBaseUrl": "http://localhost:5080/",
-	"ApiKey": "replace-with-the-same-random-key",
-	"ApiRole": "editor"
-}
-```
-
-Restart DMAP Guide. The API is tried first; if it has no guide yet, the app loads the local guide folder. The first desktop save uploads that guide. Open `http://localhost:5080/swagger` to check the API is running. Swagger requests do not automatically send `X-Api-Key`, so operations sent from Swagger will return `401` unless a client adds that header.
-
-## Same Wi-Fi
-
-Stop the API and restart it listening on the desktop's network interfaces:
+- **Local testing:** in Development, with no keys configured, `local-dev-key` (or `Dmap:ApiKey`) is accepted as an editor key. `Run Local Test Server.cmd` starts the server this way, listening only on this computer.
+- **Everything else:** configure keys under `Dmap:ApiKeys` (each `Key` at least 16 characters, plus a `Role`). The server refuses to start outside Development without them. `RemoteTest\Run-Remote-API.cmd` uses a random key made by `Prepare Remote PC Test.cmd`.
 
 ```powershell
-dotnet run --project .\DmapApi\DmapApi.csproj -- --urls http://0.0.0.0:5080
-```
-
-If Windows Firewall prompts, allow access only on Private networks. Otherwise add a Private-profile inbound rule for TCP port `5080`; do not disable the firewall. Run `ipconfig` and note the desktop's IPv4 address, for example `192.168.1.25`.
-
-On the phone, open `http://192.168.1.25:5080/swagger` using that address. To call API endpoints, use a mobile REST client and set `X-Api-Key` to the same random key. Write requests also need `X-User-Role: editor` and `Content-Type: application/json`. A direct browser visit to `/api/dmap/health` returns `401` because it cannot add the required custom header.
-
-The phone and desktop must be on the same non-guest Wi-Fi network, and client isolation must be disabled on the router.
-
-## Outside Development
-
-The API refuses to start until role-bound keys are configured. Each indexed entry under `Dmap:ApiKeys` has a `Key` secret value and a `Role` value. Production requests cannot choose their role through `X-User-Role`; the API key determines it. Store production keys in the deployment secret manager.
-
-## Internet test
-
-Install Tailscale on the desktop and phone, and sign in to the same private tailnet. Do not forward API ports on the router. Configure a role-bound key for a non-Development test:
-
-```powershell
-dotnet user-secrets set "Dmap:ApiKeys:0:Key" "replace-with-a-different-long-random-key" --project .\DmapApi\DmapApi.csproj
+dotnet user-secrets set "Dmap:ApiKeys:0:Key" "a-long-random-key" --project .\DmapApi\DmapApi.csproj
 dotnet user-secrets set "Dmap:ApiKeys:0:Role" "editor" --project .\DmapApi\DmapApi.csproj
 $env:ASPNETCORE_ENVIRONMENT = "Production"
 $env:Dmap__LoadUserSecrets = "true"
 dotnet run --project .\DmapApi\DmapApi.csproj -- --urls http://127.0.0.1:5080
 ```
 
-In a second PowerShell terminal, run `tailscale serve --bg http://127.0.0.1:5080`. Tailscale prints an HTTPS tailnet URL. From the phone REST client, send `GET https://<tailnet-hostname>/api/dmap/health` with `X-Api-Key` set to the role-bound key. Use the HTTPS tailnet URL as the desktop `ApiBaseUrl` too if you want the desktop app to use the tunnel. Production ignores `X-User-Role`.
+The apps send `X-User-Name` (URL-escaped) with each request. It's the name shown on pages ("Last changed by …"), not a login.
 
-These API keys are for a private proof-of-concept, not company single sign-on. A company deployment should use its identity provider and managed hosting. This repository does not yet contain a phone app; the phone can check the API and send REST requests, but cannot use the DMAP guide UI yet.
+## Reaching it from other devices
+
+Use Tailscale: run `tailscale serve --bg http://127.0.0.1:5080` and use the HTTPS tailnet address it prints. `Prepare Remote PC Test.cmd` does this for you. Don't forward the port on your router. The phone app only allows plain HTTP to the emulator's address for this PC (`10.0.2.2`).
+
+## Endpoints
+
+All of these are under `/api/dmap`:
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `health` | Server status, this key's role, guide version |
+| GET | `guide` | Every page, plus the guide version |
+| GET | `changes?since=N` | Pages changed or deleted after guide version N |
+| PUT | `records/{kind}/{id}` | Save a page: `{ baseVersion, parentId, data }`. Use `baseVersion` 0 to create. Returns 409 with the current page if someone else saved it first, or 404 if it was deleted. |
+| DELETE | `records/{kind}/{id}` | Delete a page and the pages inside it |
+| GET/PUT/DELETE | `locks/{id}` | "Someone is editing this page" markers |
+| POST | `images?ext=.jpg` | Add a picture (the request body is the file, 15 MB at most) |
+| GET | `images/{name}` | Fetch a picture |
+
+`kind` is `guide`, `season`, `campaign` or `episode`. See `DmapApi.http` for examples.
+
+A company deployment should use the company's identity provider and managed hosting rather than shared keys.

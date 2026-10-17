@@ -42,11 +42,23 @@ try {
         throw 'The desktop app could not be prepared. Please send the text shown above for help.'
     }
 
+    # A private access key for this test, made once and kept on this PC.
+    $keyFolder = Join-Path $env:LOCALAPPDATA 'DMAP Guide Server'
+    $keyFile = Join-Path $keyFolder 'remote-access-key.txt'
+    if (-not (Test-Path $keyFile)) {
+        New-Item -ItemType Directory -Path $keyFolder -Force | Out-Null
+        $bytes = New-Object byte[] 24
+        [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+        $newKey = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+        [System.IO.File]::WriteAllText($keyFile, $newKey, [System.Text.UTF8Encoding]::new($false))
+    }
+    $accessKey = ([System.IO.File]::ReadAllText($keyFile)).Trim()
+
     $apiBaseUrl = "https://$hostName/"
     $settings = [ordered]@{
+        UseServer = $true
         ApiBaseUrl = $apiBaseUrl
-        ApiKey = 'local-dev-key'
-        ApiRole = 'editor'
+        ApiKey = $accessKey
     }
     $settingsPath = Join-Path $publishFolder 'settings.json'
     $settingsJson = $settings | ConvertTo-Json
@@ -87,7 +99,9 @@ DMAP GUIDE REMOTE TEST
 6. When the book window appears, click its cover to open it.
 
 The API-hosting PC must stay on, connected to Tailscale, and have its API window open.
-This is a private proof-of-concept test. Only share this package with a trusted PC on your tailnet.
+This is a private proof-of-concept test. The package contains the guide's access key:
+only share it with a trusted PC on your tailnet. To shut everyone out, delete
+%LOCALAPPDATA%\DMAP Guide Server\remote-access-key.txt on the host PC and prepare a new package.
 "@
     [System.IO.File]::WriteAllText(
         (Join-Path $publishFolder 'READ THIS FIRST.txt'),
@@ -108,6 +122,8 @@ This is a private proof-of-concept test. Only share this package with a trusted 
     Write-Host ''
     Write-Host 'READY' -ForegroundColor Green
     Write-Host "The API address is: $apiBaseUrl"
+    Write-Host "The access key is:  $accessKey"
+    Write-Host '(Enter both in Settings on a phone, or on this PC''s DMAP Guide, to use the shared guide.)'
     Write-Host 'A new window named DMAP API should open. Leave that window open.'
     Write-Host "Send this package to the other PC: $zipPath"
     Write-Host 'On the other PC, install Tailscale, sign in to the same account, unzip the package, and double-click Connect to DMAP Guide.cmd.'

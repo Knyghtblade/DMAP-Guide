@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.SeasonView"
+             x:DataType="m:Season">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="Dungeon Masters"/>
+        <HorizontalStackLayout Spacing="8">
+            <Label Text="Season" Style="{StaticResource PageTitle}" VerticalOptions="Center"/>
+            <c:InkEntry Style="{StaticResource TitleEntry}" Text="{Binding Number}" Keyboard="Numeric" MinimumWidthRequest="48" VerticalOptions="Center"/>
+        </HorizontalStackLayout>
+        <c:InkEntry Text="{Binding Title}" Placeholder="Season title (optional)" FontFamily="DmapHeading" FontSize="17"
+                    TextColor="{StaticResource InkSoftColor}"/>
+
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Label Text="YEAR" Style="{StaticResource FieldLabel}"/>
+        <c:InkEntry Text="{Binding Year}" Placeholder="Not set" HorizontalOptions="Start" MinimumWidthRequest="120"/>
+
+        <Label Text="About this Season" Style="{StaticResource SectionHeader}" Margin="0,12,0,4"/>
+        <c:InkEditor Text="{Binding Description}" Placeholder="No description yet."/>
+
+        <HorizontalStackLayout Style="{StaticResource SectionRow}">
+            <Label Text="Campaigns" Style="{StaticResource SectionHeader}"/>
+            <c:TomeButton Text="+ New campaign" FontSize="10" Margin="12,0,0,0" VerticalOptions="Center" Clicked="OnNewCampaign"/>
+        </HorizontalStackLayout>
+        <Label Style="{StaticResource EmptyNote}" Text="No campaigns yet."
+               IsVisible="{Binding Campaigns.Count, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Campaigns}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:Campaign">
+                    <c:LinkRow Target="{Binding .}">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                            <Label Text="⚔" TextColor="{StaticResource GoldColor}" FontSize="15"/>
+                            <Label Grid.Column="1" Text="{Binding DisplayName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="14"
+                                   TextColor="{StaticResource InkColor}"/>
+                            <Label Grid.Column="2" FontFamily="DmapBodyItalic" FontSize="14" TextColor="{StaticResource InkFadedColor}">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding Episodes.Count}"/>
+                                        <Span Text=" episodes"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Grid>
+                    </c:LinkRow>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

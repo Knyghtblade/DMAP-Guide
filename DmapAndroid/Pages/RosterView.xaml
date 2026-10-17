@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.RosterView"
+             x:DataType="m:CastRosterPage">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="{Binding Campaign.DisplayName}"/>
+        <Label Style="{StaticResource PageTitle}" Text="Cast &amp; Characters"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Label Style="{StaticResource Body}" FontFamily="DmapBodyItalic" TextColor="{StaticResource InkSoftColor}" Margin="2,0,0,8"
+               Text="Everyone at the table for this campaign. Episodes pick their cast from this list, so details written here appear on every episode they're in."/>
+
+        <HorizontalStackLayout Style="{StaticResource SectionRow}" Margin="0,2,0,10">
+            <Label Text="The Company" Style="{StaticResource SectionHeader}"/>
+            <c:AddButton Text="+ Add character" Clicked="OnAddCharacter"/>
+        </HorizontalStackLayout>
+
+        <Label Style="{StaticResource EmptyNote}" Text="No characters yet. Press Edit Page, then + Add character."
+               IsVisible="{Binding Campaign.Characters.Count, Converter={StaticResource IsEmpty}}"/>
+
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Campaign.Characters}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:RosterCard/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

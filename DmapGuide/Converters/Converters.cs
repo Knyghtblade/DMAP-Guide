@@ -1,5 +1,5 @@
-using DmapGuide.Models;
-using DmapGuide.Services;
+using DmapShared.Models;
+using DmapShared.Storage;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -52,12 +52,12 @@ public class DateTextConverter : IValueConverter
     public object ConvertBack(object value, Type t, object? p, CultureInfo c) => throw new NotSupportedException();
 }
 
-/// <summary>Stored image path → loaded bitmap (null if missing).</summary>
+/// <summary>Stored image path → loaded bitmap (null if missing, or still downloading from the shared server).</summary>
 public class ImageConverter : IValueConverter
 {
     public object? Convert(object value, Type t, object? p, CultureInfo c)
     {
-        string? full = DataStore.Current?.ResolveImage(value as string);
+        string? full = GuideImages.Resolve(value as string);
         if (full == null) return null;
 
         try
@@ -66,6 +66,7 @@ public class ImageConverter : IValueConverter
             bmp.BeginInit();
             bmp.UriSource = new Uri(full);
             bmp.CacheOption = BitmapCacheOption.OnLoad; // don't lock the file
+            bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
             if (int.TryParse(p as string, out int w)) bmp.DecodePixelWidth = w;
             bmp.EndInit();
             bmp.Freeze();

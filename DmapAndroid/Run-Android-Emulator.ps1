@@ -70,7 +70,7 @@ try {
 
     $apiListener = Get-NetTCPConnection -LocalPort 5080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $apiListener) {
-        throw 'The guide API is not running on this computer. Start the DMAP API window first, then double-click this file again.'
+        throw 'The guide server is not running on this computer. Double-click Run Local Test Server.cmd first, leave its window open, then double-click this file again.'
     }
 
     if (-not (Test-Path $project)) {

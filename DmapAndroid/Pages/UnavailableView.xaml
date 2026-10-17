@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.UnavailableView"
+             x:DataType="vm:GuideUnavailablePage">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="The shared guide"/>
+        <Label Style="{StaticResource PageTitle}" Text="{Binding Title}"/>
+        <Label Style="{StaticResource Flourish}"/>
+        <Label Style="{StaticResource Body}" Text="{Binding Message}"/>
+        <HorizontalStackLayout Spacing="8" Margin="0,16,0,0">
+            <c:TomeButton Text="Try again" Command="{Binding Main.ReconnectCommand}"/>
+            <c:TomeButton Text="Settings…" Command="{Binding Main.ShowSettingsCommand}"/>
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="Where the guide lives"/>
+        <Label Style="{StaticResource PageTitle}" Text="Settings"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Label Text="YOUR NAME" Style="{StaticResource FieldLabel}"/>
+        <Entry Style="{StaticResource FormEntry}" Text="{Binding UserName}" Placeholder="Your name" MaximumWidthRequest="420" HorizontalOptions="Start" MinimumWidthRequest="280"/>
+        <Label Style="{StaticResource EmptyNote}" Text="Shown to other people on the pages you change."/>
+
+        <Label Text="The Guide" Style="{StaticResource SectionHeader}" Margin="0,8,0,6"/>
+        <VerticalStackLayout IsVisible="{Binding CanUseFolder}" Margin="0,0,0,8">
+            <RadioButton GroupName="Where" IsChecked="{Binding UseServer}" Content="The shared guide server"/>
+            <RadioButton GroupName="Where" IsChecked="{Binding UseFolder}" Content="A folder on this computer (e.g. a shared OneDrive folder)"/>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout IsVisible="{Binding UseServer}" Spacing="2">
+            <Label Text="SERVER ADDRESS" Style="{StaticResource FieldLabel}"/>
+            <Entry Style="{StaticResource FormEntry}" Text="{Binding ServerAddress}" Placeholder="e.g. https://name.tailnet.ts.net/" Keyboard="Url"
+                   MaximumWidthRequest="520" HorizontalOptions="Fill"/>
+            <Label Text="ACCESS KEY" Style="{StaticResource FieldLabel}" Margin="2,8,0,0"/>
+            <Entry Style="{StaticResource FormEntry}" Text="{Binding AccessKey}" IsPassword="True" Placeholder="Access key"
+                   MaximumWidthRequest="520" HorizontalOptions="Fill"/>
+            <Label Style="{StaticResource EmptyNote}" Text="Ask the person who runs the shared guide for its address and access key."/>
+        </VerticalStackLayout>
+
+        <Label Style="{StaticResource Body}" TextColor="{StaticResource RubricColor}" Margin="2,12,0,0"
+               Text="{Binding Problem}" IsVisible="{Binding Problem, Converter={StaticResource NotEmpty}}"/>
+
+        <c:TomeButton Text="Use these settings" Margin="0,14,0,0" Command="{Binding ApplyCommand}"
+                      IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"/>
+    </VerticalStackLayout>
+</ContentView>

@@ -1,34 +1,84 @@
+using DmapShared.Storage;
+using DmapShared.ViewModels;
 using System.IO;
 using System.Text.Json;
 
 namespace DmapGuide.Services;
 
 /// <summary>Per-user settings, stored in %APPDATA%\DMAP Guide\settings.json.</summary>
-public class AppSettings
+public class AppSettings : ISettingsStore
 {
-    public string DataFolder { get; set; } = DefaultDataFolder;
+    /// <summary>The file's layout. ApiBaseUrl / ApiKey keep their earlier names so existing files (and test packages) still work.</summary>
+    private sealed class SettingsFile
+    {
+        public string? DataFolder { get; set; }
+        public bool? UseServer { get; set; }
+        public string? ApiBaseUrl { get; set; }
+        public string? ApiKey { get; set; }
+        public string? UserName { get; set; }
+    }
 
-    /// <summary>Optional API base URL. When set, the app tries the remote API before the local guide folder.</summary>
-    public string ApiBaseUrl { get; set; } = "";
+    private static string SettingsPath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DMAP Guide", "settings.json");
 
-    /// <summary>Optional API key for local test endpoints.</summary>
-    public string ApiKey { get; set; } = "local-dev-key";
+    public async Task<GuideSettings> LoadAsync()
+    {
+        SettingsFile? file = null;
+        try
+        {
+            if (File.Exists(SettingsPath))
+                file = JsonSerializer.Deserialize<SettingsFile>(await File.ReadAllTextAsync(SettingsPath));
+        }
+        catch (Exception) { }
 
-    /// <summary>Optional API role used for local testing: viewer, editor, or admin.</summary>
-    public string ApiRole { get; set; } = "editor";
+        var settings = new GuideSettings
+        {
+            DataFolder = file?.DataFolder is { Length: > 0 } folder ? folder : DefaultDataFolder,
+            ServerAddress = file?.ApiBaseUrl ?? "",
+            AccessKey = file?.ApiKey ?? "",
+            UseServer = file?.UseServer ?? !string.IsNullOrWhiteSpace(file?.ApiBaseUrl),
+            UserName = file?.UserName is { Length: > 0 } name ? name : Environment.UserName
+        };
 
-    /// <summary>The name other people see on pages you edit.</summary>
-    public string UserName { get; set; } = Environment.UserName;
+        // Remember the folder chosen on first run, so it doesn't change later (e.g. when OneDrive is set up).
+        if (file?.DataFolder is not { Length: > 0 })
+        {
+            try { await SaveAsync(settings); } catch (Exception) { }
+        }
+        return settings;
+    }
 
+    public async Task SaveAsync(GuideSettings settings)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        var file = new SettingsFile
+        {
+            DataFolder = settings.DataFolder,
+            UseServer = settings.UseServer,
+            ApiBaseUrl = settings.ServerAddress,
+            ApiKey = settings.AccessKey,
+            UserName = settings.UserName
+        };
+        await File.WriteAllTextAsync(SettingsPath, JsonSerializer.Serialize(file, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    /// <summary>
+    /// A guide already in Documents\DMAP Guide (where earlier versions kept it) stays there;
+    /// otherwise a new guide goes in OneDrive if there is one, so it can be shared.
+    /// </summary>
     public static string DefaultDataFolder
     {
         get
         {
+            string documents = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DMAP Guide");
+            if (FolderGuideStore.HasData(documents))
+                return documents;
+
             string? oneDrive = TryGetOneDriveRoot();
             if (!string.IsNullOrWhiteSpace(oneDrive))
                 return Path.Combine(oneDrive, "DMAP Guide");
 
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "DMAP Guide");
+            return documents;
         }
     }
 
@@ -54,25 +104,5 @@ public class AppSettings
         }
 
         return null;
-    }
-
-    private static string SettingsFile =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DMAP Guide", "settings.json");
-
-    public static AppSettings Load()
-    {
-        try
-        {
-            if (File.Exists(SettingsFile))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsFile)) ?? new AppSettings();
-        }
-        catch { }
-        return new AppSettings();
-    }
-
-    public void Save()
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(SettingsFile)!);
-        File.WriteAllText(SettingsFile, JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true }));
     }
 }

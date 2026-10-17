@@ -8,10 +8,11 @@ namespace DmapAndroid;
 
 [Activity(
     Label = "DMAP Guide",
-    Theme = "@style/Maui.MainTheme",
+    Theme = "@style/DmapTheme",
     MainLauncher = true,
     Exported = true,
-    ScreenOrientation = ScreenOrientation.Landscape,
+    // The tome is a two-page spread: landscape, either way up.
+    ScreenOrientation = ScreenOrientation.SensorLandscape,
     LaunchMode = LaunchMode.SingleTop,
     ConfigurationChanges = ConfigChanges.ScreenSize |
         ConfigChanges.Orientation |
@@ -26,6 +27,13 @@ public sealed class MainActivity : MauiAppCompatActivity
         try
         {
             base.OnCreate(savedInstanceState);
+
+            // A phone in landscape is short: give the tome the whole screen (swipe from an edge to see the bars).
+            if (Window != null && AndroidX.Core.View.WindowCompat.GetInsetsController(Window, Window.DecorView) is { } bars)
+            {
+                bars.Hide(AndroidX.Core.View.WindowInsetsCompat.Type.SystemBars());
+                bars.SystemBarsBehavior = AndroidX.Core.View.WindowInsetsControllerCompat.BehaviorShowTransientBarsBySwipe;
+            }
         }
         catch (Exception exception)
         {

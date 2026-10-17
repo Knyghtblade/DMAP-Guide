@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.ScheduleView"
+             x:DataType="vm:ScheduleViewModel">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="Filming schedule &amp; air dates"/>
+        <Label Style="{StaticResource PageTitle}" Text="Chronicle of Dates"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <FlexLayout Wrap="Wrap" AlignItems="Center" Margin="0,0,0,10">
+            <Picker ItemsSource="{Binding Campaigns}" SelectedItem="{Binding SelectedCampaign}" ItemDisplayBinding="{Binding Name, x:DataType=vm:CampaignFilter}"
+                    MinimumWidthRequest="220" FontFamily="DmapBody" FontSize="14" TextColor="{StaticResource InkColor}" Margin="0,0,14,4"/>
+            <HorizontalStackLayout Margin="0,0,10,4">
+                <CheckBox IsChecked="{Binding ShowFilming}" VerticalOptions="Center"/>
+                <Label Text="Filming" Style="{StaticResource Body}" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Margin="0,0,10,4">
+                <CheckBox IsChecked="{Binding ShowAiring}" VerticalOptions="Center"/>
+                <Label Text="Air dates" Style="{StaticResource Body}" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Margin="0,0,10,4">
+                <CheckBox IsChecked="{Binding ShowPast}" VerticalOptions="Center"/>
+                <Label Text="Show past dates" Style="{StaticResource Body}" VerticalOptions="Center"/>
+            </HorizontalStackLayout>
+        </FlexLayout>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout>
+                    <Label Text="✦ NEXT FILMING" Style="{StaticResource FieldLabel}" TextColor="{StaticResource ArcaneColor}"/>
+                    <c:LinkRow Target="{Binding NextFilming.Target}" IsVisible="{Binding NextFilming, Converter={StaticResource NotEmpty}}">
+                        <VerticalStackLayout>
+                            <Label Text="{Binding NextFilming.LongDate}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="15" TextColor="{StaticResource RubricColor}"/>
+                            <Label Text="{Binding NextFilming.Heading}" Style="{StaticResource Body}"/>
+                            <Label Text="{Binding NextFilming.CampaignName}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"/>
+                            <Label Text="{Binding NextFilming.Where}" FontSize="13" Style="{StaticResource Body}" TextColor="{StaticResource InkFadedColor}"
+                                   IsVisible="{Binding NextFilming.Where, Converter={StaticResource NotEmpty}}"/>
+                        </VerticalStackLayout>
+                    </c:LinkRow>
+                    <Label Style="{StaticResource EmptyNote}" Text="Nothing scheduled."
+                           IsVisible="{Binding NextFilming, Converter={StaticResource IsEmpty}}"/>
+                </VerticalStackLayout>
+            </Border>
+            <Border Grid.Column="1" Style="{StaticResource Card}">
+                <VerticalStackLayout>
+                    <Label Text="☾ NEXT AIRING" Style="{StaticResource FieldLabel}" TextColor="{StaticResource AiredColor}"/>
+                    <c:LinkRow Target="{Binding NextAiring.Target}" IsVisible="{Binding NextAiring, Converter={StaticResource NotEmpty}}">
+                        <VerticalStackLayout>
+                            <Label Text="{Binding NextAiring.LongDate}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="15" TextColor="{StaticResource RubricColor}"/>
+                            <Label Text="{Binding NextAiring.Heading}" Style="{StaticResource Body}"/>
+                            <Label Text="{Binding NextAiring.CampaignName}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"/>
+                            <Label Text="{Binding NextAiring.Where}" FontSize="13" Style="{StaticResource Body}" TextColor="{StaticResource InkFadedColor}"
+                                   IsVisible="{Binding NextAiring.Where, Converter={StaticResource NotEmpty}}"/>
+                        </VerticalStackLayout>
+                    </c:LinkRow>
+                    <Label Style="{StaticResource EmptyNote}" Text="Nothing scheduled."
+                           IsVisible="{Binding NextAiring, Converter={StaticResource IsEmpty}}"/>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Label Style="{StaticResource EmptyNote}" Margin="2,8,0,0"
+               Text="No dates to show. Add a filming date or air dates on an episode's page, or tick 'Show past dates'."
+               IsVisible="{Binding Months, Converter={StaticResource IsEmpty}}"/>
+
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Months}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="vm:MonthGroup">
+                    <VerticalStackLayout Margin="0,10,0,0">
+                        <Label Text="{Binding Name}" Style="{StaticResource SectionHeader}"/>
+                        <BoxView Style="{StaticResource Rule}"/>
+                        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Events}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ScheduleEvent">
+                                    <c:EventRow/>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout IsVisible="{Binding Unscheduled, Converter={StaticResource NotEmpty}}">
+            <Label Text="Not Yet Scheduled" Style="{StaticResource SectionHeader}" Margin="0,18,0,0"/>
+            <BoxView Style="{StaticResource Rule}"/>
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Unscheduled}">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="m:Episode">
+                        <c:LinkRow Target="{Binding .}">
+                            <Label>
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="{Binding DisplayName}" FontFamily="DmapBody" FontSize="15" TextColor="{StaticResource InkColor}"/>
+                                        <Span Text="  "/>
+                                        <Span Text="{Binding Campaign.DisplayName}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"/>
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </c:LinkRow>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

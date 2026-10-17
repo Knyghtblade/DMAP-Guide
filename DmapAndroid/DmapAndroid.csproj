@@ -10,10 +10,12 @@
     <Nullable>enable</Nullable>
     <ApplicationTitle>DMAP Guide</ApplicationTitle>
     <ApplicationId>com.dmapguide.mobile</ApplicationId>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
+    <ApplicationVersion>2</ApplicationVersion>
     <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
+    <!-- Always put the app's code inside the APK, so an APK copied to a phone runs on its own. -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,7 +23,7 @@
     <EmbeddedResource Include="..\DmapGuide\Assets\dmap-logo.png" LogicalName="DmapAndroid.Resources.dmaplogo.png" />
     <EmbeddedResource Include="..\DmapGuide\Assets\dragon-scales.jpg" LogicalName="DmapAndroid.Resources.dragonscales.jpg" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
-    <ProjectReference Include="..\DmapDesktopClient\DmapDesktopClient.csproj" />
+    <ProjectReference Include="..\DmapShared\DmapShared.csproj" />
   </ItemGroup>
 
 </Project>

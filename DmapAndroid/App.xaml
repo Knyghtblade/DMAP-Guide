@@ -1,11 +1,132 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
              x:Class="DmapAndroid.App">
     <Application.Resources>
         <ResourceDictionary>
-            <Color x:Key="PageColor">#F3EBDD</Color>
-            <Color x:Key="InkColor">#29251F</Color>
-            <Color x:Key="AccentColor">#8B5E34</Color>
+            <!-- The same colours as the desktop tome -->
+            <Color x:Key="InkColor">#2E1F14</Color>
+            <Color x:Key="InkSoftColor">#5A4431</Color>
+            <Color x:Key="InkFadedColor">#8C7A63</Color>
+            <Color x:Key="RubricColor">#9E141E</Color>
+            <Color x:Key="GoldColor">#C9A24A</Color>
+            <Color x:Key="GoldLightColor">#E8CF8A</Color>
+            <Color x:Key="ArcaneColor">#5B3E8C</Color>
+            <Color x:Key="AiredColor">#4F7F3A</Color>
+            <Color x:Key="CardColor">#26C9A86A</Color>
+            <Color x:Key="CardBorderColor">#55876A45</Color>
+
+            <c:StatusColorConverter x:Key="StatusColor"/>
+            <c:DateTextConverter x:Key="DateText"/>
+            <c:NotEmptyConverter x:Key="NotEmpty"/>
+            <c:IsEmptyConverter x:Key="IsEmpty"/>
+            <c:InvertConverter x:Key="Not"/>
+
+            <!-- ======================== TEXT ======================== -->
+            <Style x:Key="PageKicker" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapHeading"/>
+                <Setter Property="FontSize" Value="11"/>
+                <Setter Property="TextColor" Value="{StaticResource InkFadedColor}"/>
+            </Style>
+            <Style x:Key="PageTitle" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapDisplay"/>
+                <Setter Property="FontSize" Value="25"/>
+                <Setter Property="TextColor" Value="{StaticResource RubricColor}"/>
+                <Setter Property="LineBreakMode" Value="WordWrap"/>
+            </Style>
+            <Style x:Key="SectionHeader" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapHeading"/>
+                <Setter Property="FontSize" Value="16"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="{StaticResource RubricColor}"/>
+                <Setter Property="VerticalOptions" Value="Center"/>
+            </Style>
+            <Style x:Key="FieldLabel" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapHeading"/>
+                <Setter Property="FontSize" Value="10"/>
+                <Setter Property="FontAttributes" Value="Bold"/>
+                <Setter Property="TextColor" Value="{StaticResource InkFadedColor}"/>
+                <Setter Property="Margin" Value="2,0,0,0"/>
+            </Style>
+            <Style x:Key="Body" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapBody"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource InkColor}"/>
+                <Setter Property="LineBreakMode" Value="WordWrap"/>
+            </Style>
+            <Style x:Key="EmptyNote" TargetType="Label">
+                <Setter Property="FontFamily" Value="DmapBodyItalic"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="TextColor" Value="{StaticResource InkFadedColor}"/>
+                <Setter Property="LineBreakMode" Value="WordWrap"/>
+                <Setter Property="Margin" Value="2,2,0,6"/>
+            </Style>
+            <Style x:Key="Flourish" TargetType="Label">
+                <Setter Property="Text" Value="─────── ❦ ───────"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="TextColor" Value="{StaticResource GoldColor}"/>
+                <Setter Property="HorizontalOptions" Value="Center"/>
+                <Setter Property="Margin" Value="0,6,0,6"/>
+            </Style>
+            <Style x:Key="Rule" TargetType="BoxView">
+                <Setter Property="HeightRequest" Value="1"/>
+                <Setter Property="Color" Value="{StaticResource GoldColor}"/>
+                <Setter Property="Opacity" Value="0.7"/>
+                <Setter Property="Margin" Value="0,3,0,5"/>
+            </Style>
+
+            <!-- Section header with its "+ Add" button -->
+            <Style x:Key="SectionRow" TargetType="HorizontalStackLayout">
+                <Setter Property="Margin" Value="0,14,0,6"/>
+            </Style>
+
+            <!-- ======================== FIELDS ======================== -->
+            <Style x:Key="InkText" TargetType="c:InkEntry">
+                <Setter Property="FontFamily" Value="DmapBody"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource InkColor}"/>
+                <Setter Property="PlaceholderColor" Value="{StaticResource InkFadedColor}"/>
+            </Style>
+            <Style TargetType="c:InkEntry" BasedOn="{StaticResource InkText}"/>
+            <Style TargetType="c:InkEditor">
+                <Setter Property="FontFamily" Value="DmapBody"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource InkColor}"/>
+                <Setter Property="PlaceholderColor" Value="{StaticResource InkFadedColor}"/>
+            </Style>
+            <Style x:Key="TitleEntry" TargetType="c:InkEntry" BasedOn="{StaticResource InkText}">
+                <Setter Property="FontFamily" Value="DmapDisplay"/>
+                <Setter Property="FontSize" Value="23"/>
+                <Setter Property="TextColor" Value="{StaticResource RubricColor}"/>
+            </Style>
+
+            <!-- Always editable (Settings page) -->
+            <Style x:Key="FormEntry" TargetType="Entry">
+                <Setter Property="FontFamily" Value="DmapBody"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource InkColor}"/>
+                <Setter Property="PlaceholderColor" Value="{StaticResource InkFadedColor}"/>
+                <Setter Property="BackgroundColor" Value="#70FFFBEF"/>
+            </Style>
+
+            <!-- ======================== CARDS ======================== -->
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="{StaticResource CardColor}"/>
+                <Setter Property="Stroke" Value="{StaticResource CardBorderColor}"/>
+                <Setter Property="StrokeThickness" Value="1"/>
+                <Setter Property="StrokeShape" Value="RoundRectangle 6"/>
+                <Setter Property="Padding" Value="10"/>
+                <Setter Property="Margin" Value="0,0,0,10"/>
+            </Style>
+
+            <Style TargetType="CheckBox">
+                <Setter Property="Color" Value="{StaticResource RubricColor}"/>
+            </Style>
+            <Style TargetType="RadioButton">
+                <Setter Property="FontFamily" Value="DmapBody"/>
+                <Setter Property="FontSize" Value="15"/>
+                <Setter Property="TextColor" Value="{StaticResource InkColor}"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

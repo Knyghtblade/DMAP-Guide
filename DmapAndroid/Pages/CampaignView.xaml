@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.CampaignView"
+             x:DataType="m:Campaign">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="{Binding Season.DisplayName}"/>
+
+        <HorizontalStackLayout Spacing="4">
+            <Label Text="CAMPAIGN" Style="{StaticResource FieldLabel}" FontSize="13" VerticalOptions="Center"/>
+            <c:InkEntry Text="{Binding Number}" Keyboard="Numeric" MinimumWidthRequest="44" FontFamily="DmapHeading" FontSize="15"
+                        FontAttributes="Bold" VerticalOptions="Center"/>
+        </HorizontalStackLayout>
+        <c:InkEntry Style="{StaticResource TitleEntry}" Text="{Binding Title}" Placeholder="Untitled campaign"/>
+
+        <!-- Cover art -->
+        <c:CoverArt ImagePath="{Binding CoverImage}"/>
+        <c:AddButton Text="Choose cover art…" Margin="0,8,0,0" Clicked="OnChooseCover"/>
+
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="8">
+            <VerticalStackLayout>
+                <Label Text="DUNGEON MASTER" Style="{StaticResource FieldLabel}"/>
+                <c:InkEntry Text="{Binding DungeonMaster}" Placeholder="Not set"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Column="1">
+                <Label Text="SETTING / GAME SYSTEM" Style="{StaticResource FieldLabel}"/>
+                <c:InkEntry Text="{Binding Setting}" Placeholder="e.g. D&amp;D 5e, Warcraft"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Row="1">
+                <Label Text="FILMING STARTS" Style="{StaticResource FieldLabel}"/>
+                <c:DateField Date="{Binding FilmingStart}"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Row="1" Grid.Column="1">
+                <Label Text="FILMING ENDS" Style="{StaticResource FieldLabel}"/>
+                <c:DateField Date="{Binding FilmingEnd}"/>
+            </VerticalStackLayout>
+            <VerticalStackLayout Grid.Row="2">
+                <Label Text="FILMING LOCATION" Style="{StaticResource FieldLabel}"/>
+                <c:InkEntry Text="{Binding FilmingLocation}" Placeholder="Not set"/>
+            </VerticalStackLayout>
+        </Grid>
+
+        <Label Text="About this Campaign" Style="{StaticResource SectionHeader}" Margin="0,12,0,4"/>
+        <c:InkEditor Text="{Binding Description}" Placeholder="No description yet."/>
+
+        <HorizontalStackLayout Style="{StaticResource SectionRow}">
+            <Label Text="Cast &amp; Characters" Style="{StaticResource SectionHeader}"/>
+            <c:TomeButton Text="Open →" FontSize="10" Margin="12,0,0,0" VerticalOptions="Center" Clicked="OnOpenRoster"/>
+        </HorizontalStackLayout>
+        <Label Style="{StaticResource EmptyNote}" Text="No characters yet."
+               IsVisible="{Binding Characters.Count, Converter={StaticResource IsEmpty}}"/>
+        <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Characters}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:LinkRow Margin="0,0,8,4" Tapped="OnCharacterTapped">
+                        <HorizontalStackLayout Spacing="8">
+                            <c:Portrait ImagePath="{Binding ImagePath}" Size="38"/>
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="{Binding CharacterName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="13" TextColor="{StaticResource InkColor}"/>
+                                <Label Text="{Binding PlayerName}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"/>
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </c:LinkRow>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </FlexLayout>
+
+        <HorizontalStackLayout Style="{StaticResource SectionRow}">
+            <Label Text="Episodes" Style="{StaticResource SectionHeader}"/>
+            <c:TomeButton Text="+ New episode" FontSize="10" Margin="12,0,0,0" VerticalOptions="Center" Clicked="OnNewEpisode"/>
+        </HorizontalStackLayout>
+
+        <Label Style="{StaticResource EmptyNote}" Text="No episodes yet."
+               IsVisible="{Binding Episodes.Count, Converter={StaticResource IsEmpty}}"/>
+
+        <Grid ColumnDefinitions="40,*,92,92,62" Padding="5,0,5,2"
+              IsVisible="{Binding Episodes.Count, Converter={StaticResource NotEmpty}}">
+            <Label Text="NO." Style="{StaticResource FieldLabel}"/>
+            <Label Grid.Column="1" Text="TITLE" Style="{StaticResource FieldLabel}"/>
+            <Label Grid.Column="2" Text="FILMED" Style="{StaticResource FieldLabel}"/>
+            <Label Grid.Column="3" Text="FIRST AIRED" Style="{StaticResource FieldLabel}"/>
+            <Label Grid.Column="4" Text="STATUS" Style="{StaticResource FieldLabel}"/>
+        </Grid>
+
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Episodes}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:Episode">
+                    <c:LinkRow Target="{Binding .}">
+                        <Grid ColumnDefinitions="40,*,92,92,62">
+                            <Label Text="{Binding Number}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="13" TextColor="{StaticResource InkColor}"/>
+                            <Label Grid.Column="1" Text="{Binding DisplayName}" LineBreakMode="TailTruncation" Style="{StaticResource Body}"/>
+                            <Label Grid.Column="2" FontSize="13" Style="{StaticResource Body}"
+                                   Text="{Binding DateFilmed, Converter={StaticResource DateText}, ConverterParameter='MMM d, yyyy'}"/>
+                            <Label Grid.Column="3" FontSize="13" Style="{StaticResource Body}"
+                                   Text="{Binding FirstAirDate, Converter={StaticResource DateText}, ConverterParameter='MMM d, yyyy'}"/>
+                            <HorizontalStackLayout Grid.Column="4" Spacing="4">
+                                <Ellipse WidthRequest="8" HeightRequest="8" VerticalOptions="Center"
+                                         Fill="{Binding Status, Converter={StaticResource StatusColor}}"/>
+                                <Label Text="{Binding Status}" FontSize="13" Style="{StaticResource Body}"/>
+                            </HorizontalStackLayout>
+                        </Grid>
+                    </c:LinkRow>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

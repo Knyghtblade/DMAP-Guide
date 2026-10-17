@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DmapDesktopClient\DmapDesktopClient.csproj" />
+    <ProjectReference Include="..\DmapShared\DmapShared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

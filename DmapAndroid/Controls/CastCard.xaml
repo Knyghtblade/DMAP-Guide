@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A cast member on an episode (cast and guest stars): the desktop's cast card. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Controls.CastCard"
+             x:DataType="m:CastMember">
+    <Border Style="{StaticResource Card}">
+        <Grid ColumnDefinitions="84,*,Auto" ColumnSpacing="8">
+            <VerticalStackLayout Spacing="4">
+                <c:Portrait ImagePath="{Binding ImagePath}" Size="76"/>
+                <c:AddButton Text="Picture…" Margin="0" HorizontalOptions="Start" Clicked="OnChoosePortrait"/>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="0">
+                <c:InkEntry Text="{Binding CharacterName}" Placeholder="Character name" FontFamily="DmapHeading"
+                            FontAttributes="Bold" FontSize="15" TextColor="{StaticResource RubricColor}"/>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="2">
+                    <Label Text="played by" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"
+                           VerticalOptions="Center" Margin="3,0,2,0"/>
+                    <c:InkEntry Grid.Column="1" Text="{Binding PlayerName}" Placeholder="Player" FontAttributes="Bold" FontSize="14"/>
+                </Grid>
+                <c:InkEntry Text="{Binding CharacterSummary}" Placeholder="Race · Class · Level" FontFamily="DmapBodyItalic"
+                            FontSize="13" TextColor="{StaticResource InkSoftColor}"/>
+                <c:InkEditor Text="{Binding CharacterDescription}" Placeholder="Character bio" FontSize="14"/>
+            </VerticalStackLayout>
+
+            <c:RemoveButton Grid.Column="2" Clicked="OnRemove"/>
+        </Grid>
+    </Border>
+</ContentView>
