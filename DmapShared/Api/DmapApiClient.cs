@@ -147,13 +147,26 @@ public sealed class DmapApiClient : IDisposable
         catch (HttpRequestException ex)
         {
             throw new DmapApiException(null,
-                $"Couldn't reach the shared guide at {BaseAddress}. Check that this device is online (and connected to Tailscale), and that the guide server is running.", ex);
+                $"Couldn't reach the shared guide at {BaseAddress}. Check that this device is online (and connected to Tailscale), and that the guide server is running." +
+                HttpsHint() + $"\n\n(Details: {Innermost(ex).Message})", ex);
         }
         catch (TaskCanceledException ex)
         {
             throw new DmapApiException(null,
                 $"The shared guide at {BaseAddress} didn't answer in time. Check the connection and try again.", ex);
         }
+    }
+
+    /// <summary>Shared guides on Tailscale are only served over https; plain http works only on this computer.</summary>
+    private string HttpsHint() =>
+        BaseAddress.Scheme == Uri.UriSchemeHttp && BaseAddress.Host is not ("localhost" or "127.0.0.1" or "10.0.2.2")
+            ? $" The address probably needs to start with https:// (https://{BaseAddress.Authority}/)."
+            : "";
+
+    private static Exception Innermost(Exception ex)
+    {
+        while (ex.InnerException != null) ex = ex.InnerException;
+        return ex;
     }
 
     private static async Task<T?> Read<T>(HttpResponseMessage response, CancellationToken ct)
