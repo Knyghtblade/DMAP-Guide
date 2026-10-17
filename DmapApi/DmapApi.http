@@ -1,0 +1,171 @@
+@baseUrl = http://localhost:5000
+@apiKey = local-dev-key
+@role = editor
+@guideVersion = 0
+@campaignId = replace-with-existing-campaign-guid
+@episodeId = replace-with-episode-guid
+@seasonId = replace-with-existing-season-guid
+
+### Health
+GET {{baseUrl}}/api/dmap/health
+X-Api-Key: {{apiKey}}
+
+### Get guide JSON
+GET {{baseUrl}}/api/dmap/guide
+X-Api-Key: {{apiKey}}
+
+### Get seasons
+GET {{baseUrl}}/api/dmap/seasons
+X-Api-Key: {{apiKey}}
+
+### Update season
+PUT {{baseUrl}}/api/dmap/seasons/{{seasonId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "number": 1,
+  "name": "Season 1",
+  "year": "",
+  "description": ""
+}
+
+### Create season
+POST {{baseUrl}}/api/dmap/seasons
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "number": 1,
+  "name": "Season 1",
+  "year": "",
+  "description": ""
+}
+
+### Delete season and its campaigns/episodes
+DELETE {{baseUrl}}/api/dmap/seasons/{{seasonId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+
+### Get campaigns
+GET {{baseUrl}}/api/dmap/campaigns
+X-Api-Key: {{apiKey}}
+
+### Update campaign
+PUT {{baseUrl}}/api/dmap/campaigns/{{campaignId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "seasonId": "{{seasonId}}",
+  "number": 1,
+  "name": "Campaign 1",
+  "dungeonMaster": "",
+  "setting": "",
+  "description": "",
+  "coverImage": "",
+  "filmingStart": null,
+  "filmingEnd": null,
+  "filmingLocation": "",
+  "characters": []
+}
+
+### Create campaign
+POST {{baseUrl}}/api/dmap/campaigns
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "seasonId": "{{seasonId}}",
+  "number": 1,
+  "name": "Campaign 1",
+  "dungeonMaster": "",
+  "setting": "",
+  "description": "",
+  "coverImage": "",
+  "filmingStart": null,
+  "filmingEnd": null,
+  "filmingLocation": "",
+  "characters": []
+}
+
+### Delete campaign and its episodes
+DELETE {{baseUrl}}/api/dmap/campaigns/{{campaignId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+
+### Get episodes
+GET {{baseUrl}}/api/dmap/episodes
+X-Api-Key: {{apiKey}}
+
+### Create episode
+POST {{baseUrl}}/api/dmap/episodes
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "id": "00000000-0000-0000-0000-000000000101",
+  "campaignId": "{{campaignId}}",
+  "number": 101,
+  "name": "New episode",
+  "dungeonMaster": "",
+  "dateFilmed": null,
+  "filmingLocation": "",
+  "runtime": "",
+  "summary": "",
+  "productionNotes": "",
+  "castIds": [],
+  "guestCast": [],
+  "keyMoments": [],
+  "airDates": []
+}
+
+### Get episode
+GET {{baseUrl}}/api/dmap/episodes/{{episodeId}}
+X-Api-Key: {{apiKey}}
+
+### Update episode
+PUT {{baseUrl}}/api/dmap/episodes/{{episodeId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+Content-Type: application/json
+
+{
+  "campaignId": "{{campaignId}}",
+  "number": 101,
+  "name": "Updated episode",
+  "dungeonMaster": "",
+  "dateFilmed": null,
+  "filmingLocation": "",
+  "runtime": "",
+  "summary": "",
+  "productionNotes": "",
+  "castIds": [],
+  "guestCast": [],
+  "keyMoments": [],
+  "airDates": []
+}
+
+### Delete episode
+DELETE {{baseUrl}}/api/dmap/episodes/{{episodeId}}
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+
+### Save guide JSON
+PUT {{baseUrl}}/api/dmap/guide
+X-Api-Key: {{apiKey}}
+X-User-Role: {{role}}
+X-Guide-Version: {{guideVersion}}
+Content-Type: application/json
+
+{
+  "ShowName": "Dungeon Masters",
+  "Seasons": []
+}

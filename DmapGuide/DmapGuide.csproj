@@ -17,6 +17,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\DmapDesktopClient\DmapDesktopClient.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Fonts\*.ttf" />
     <Resource Include="Assets\*.png" />
     <Resource Include="Assets\*.jpg" />

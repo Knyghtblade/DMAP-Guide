@@ -1,3 +1,6 @@
 <Solution>
+  <Project Path="DmapApi/DmapApi.csproj" />
+  <Project Path="DmapAndroid/DmapAndroid.csproj" />
+  <Project Path="DmapDesktopClient/DmapDesktopClient.csproj" />
   <Project Path="DmapGuide/DmapGuide.csproj" />
 </Solution>

@@ -64,6 +64,12 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+RemoteTestPackage-*/
+RemoteTestPackage-*.zip
+AndroidPhoneTest/
+*.db
+*.db-wal
+*.db-shm
 
 # Tye
 .tye/

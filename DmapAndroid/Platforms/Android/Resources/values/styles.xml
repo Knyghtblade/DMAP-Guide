@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <style name="Maui.MainTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#8B5E34</item>
+        <item name="colorPrimaryDark">#604222</item>
+        <item name="colorAccent">#42634A</item>
+        <item name="android:colorAccent">#42634A</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F3EBDD</item>
+        <item name="android:navigationBarColor">#F3EBDD</item>
+    </style>
+</resources>

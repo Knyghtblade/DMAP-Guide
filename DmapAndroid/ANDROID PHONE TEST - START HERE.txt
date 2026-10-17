@@ -1,0 +1,51 @@
+DMAP GUIDE ON YOUR ANDROID PHONE
+
+TEST ON THIS COMPUTER INSTEAD (NO APK TRANSFER)
+1. Start the local DMAP API on this computer and leave its window open.
+2. In Android Studio, open More Actions > Virtual Device Manager.
+3. If there is no virtual phone, choose Create Device, select a Pixel phone, accept the recommended Android system image download, and finish setup.
+4. Press the Play triangle beside the virtual phone and wait for its home screen to appear.
+5. On this computer, double-click Run Android Emulator Test.cmd.
+6. The app builds and opens directly inside the virtual phone. It uses this computer's local API address automatically.
+
+For the real Android phone, follow the steps below.
+
+PREPARE THE APP
+1. On the computer with the DMAP Guide project, double-click Prepare Android Phone Test.cmd.
+2. Wait for READY. The Android app file ends in .apk and will be in the AndroidPhoneTest folder.
+3. Transfer that APK to your phone using a USB cable or another private method.
+4. On the phone, open the APK and approve Android's install prompt. Android may ask you to allow installation from the app you used to open the file.
+5. If Android offers to update DMAP Guide, choose Update. If it says the app cannot be installed, uninstall the old DMAP Guide from Android Settings > Apps, then install this APK again. You will need to enter the API address and key again.
+
+IF THE COMPUTER SAYS ANDROID SDK IS MISSING
+1. Install Android Studio from https://developer.android.com/studio.
+2. Open Android Studio once. Choose Standard setup and accept the suggested Android SDK installation.
+3. When setup completes, close Android Studio and double-click Prepare Android Phone Test.cmd again.
+
+IF THE BUILDER ASKS TO INSTALL JAVA 21
+Type Y and press Enter. This is the Java version required to build Android apps. Approve the Microsoft installer if Windows asks.
+
+IF THE BUILDER ASKS ABOUT ANDROID SDK LICENSES
+Read the prompt. Type Y only if you accept Google's Android SDK license terms. The builder will then install the Android platform needed by this app.
+
+CONNECT THE PHONE
+1. Make sure Tailscale is installed on the phone and says Connected to the same account as the host PC.
+2. Open DMAP Guide on the phone.
+	Turn the phone sideways to show the contents and open page side by side. If it does not rotate, turn on Auto rotate in the phone's quick settings.
+3. In API address, enter the host address shown by the remote-test setup, for example https://pauls-office.tailnet.ts.net/.
+4. In API access key, enter local-dev-key for the current private test.
+5. Leave Access level set to editor and tap Connect / Refresh.
+6. Tap an episode, make a small test edit, then tap Save episode.
+
+The host PC, Tailscale connection, and DMAP API window must remain running. This is a private test app, not a public Play Store app. Only use the development key on your private Tailscale network.
+
+IF THE APP CLOSES WITHOUT AN ERROR MESSAGE
+1. Connect the phone to this computer with the USB cable and unlock the phone.
+2. On the phone, open Settings > About phone and tap Build number seven times. Approve the phone's security prompt if shown.
+3. Go back to Settings > Developer options and turn on USB debugging.
+4. Accept the Allow USB debugging prompt on the phone.
+5. On the computer, double-click Get Android Crash Details.cmd.
+6. If the window says "daemon not running; starting now", wait. This is normal the first time.
+7. If the phone asks to allow USB debugging, tap Allow.
+8. The tool clears temporary diagnostic logs only, then waits. Open DMAP Guide on the phone, wait for it to close, return to the computer, and press Enter.
+9. Send the file named DMAP-Android-Crash.txt from the AndroidPhoneTest folder.

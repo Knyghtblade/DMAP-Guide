@@ -1,0 +1,11 @@
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="DmapAndroid.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <Color x:Key="PageColor">#F3EBDD</Color>
+            <Color x:Key="InkColor">#29251F</Color>
+            <Color x:Key="AccentColor">#8B5E34</Color>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

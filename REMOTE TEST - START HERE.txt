@@ -1,0 +1,26 @@
+DMAP GUIDE: REMOTE PC TEST
+
+You have already tested DMAP Guide on this computer. This file prepares a private test with a second PC.
+
+BEFORE STARTING
+1. Install Tailscale on both PCs from https://tailscale.com/download/windows.
+2. Sign in to the same Tailscale account on both PCs. Wait until Tailscale says Connected.
+3. If either PC belongs to your company, get permission before installing Tailscale.
+
+ON THIS PC (the one hosting the API)
+1. Close DMAP Guide.
+2. Find the terminal window running the API. Click it and press Ctrl+C. Leave Swagger/browser tabs alone.
+3. Open File Explorer and go to E:\Dev\DMAP Guide.
+4. Double-click Prepare Remote PC Test.cmd.
+5. Wait for the window to say READY. Leave the new DMAP API window open.
+6. The window will show the path to a ZIP package. Copy that ZIP to the second PC using a USB drive or a company-approved file transfer.
+
+ON THE SECOND PC
+1. Make sure Tailscale says Connected.
+2. Extract the ZIP. Open the extracted DMAP Guide folder.
+3. Close DMAP Guide if it is already open.
+4. Double-click Connect to DMAP Guide.cmd.
+5. When the book window appears, click the cover to open it.
+6. Make a small test edit and save it. The host PC must stay on with the DMAP API window open.
+
+This is a private proof-of-concept test. The package contains a development access key. Only transfer it to a trusted PC on your private Tailscale network. Do not post or email it publicly.

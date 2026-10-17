@@ -2,7 +2,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DmapGuide.Models;
 using DmapGuide.Services;
+using DmapDesktopClient;
 using Microsoft.Win32;
+using System.Net.Http;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -11,8 +14,10 @@ namespace DmapGuide.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly AppSettings _settings;
+    private readonly DmapApiClient? _apiClient;
     private DataStore _store;
     private TreeNode? _selectedNode;
+    private int? _loadedRemoteVersion;
 
     [ObservableProperty] private ShowData _data;
 
@@ -37,6 +42,18 @@ public partial class MainViewModel : ObservableObject
     public MainViewModel()
     {
         _settings = AppSettings.Load();
+
+        if (!string.IsNullOrWhiteSpace(_settings.ApiBaseUrl))
+        {
+            try
+            {
+                _apiClient = new DmapApiClient(_settings.ApiBaseUrl, _settings.ApiKey, _settings.ApiRole);
+            }
+            catch
+            {
+                _apiClient = null;
+            }
+        }
 
         // "--data <folder>" opens a different guide for this run only.
         var args = Environment.GetCommandLineArgs();
@@ -68,6 +85,16 @@ public partial class MainViewModel : ObservableObject
 
     private ShowData LoadOrSeed()
     {
+        if (_apiClient != null)
+        {
+            var remoteData = TryLoadFromApi();
+            if (remoteData != null)
+            {
+                StatusText = $"Using remote API: {_settings.ApiBaseUrl}";
+                return remoteData;
+            }
+        }
+
         try
         {
             var data = _store.Load(out var unreadable);
@@ -88,6 +115,146 @@ public partial class MainViewModel : ObservableObject
             _readOnlyAfterLoadError = true;
             return ShowData.CreateSeed();
         }
+    }
+
+    private ShowData? TryLoadFromApi()
+    {
+        try
+        {
+            var json = _apiClient!.GetGuideJsonAsync().GetAwaiter().GetResult();
+            _loadedRemoteVersion = _apiClient.GuideVersion;
+            var seasons = _apiClient.GetSeasonsAsync().GetAwaiter().GetResult();
+            var campaigns = _apiClient.GetCampaignsAsync().GetAwaiter().GetResult();
+            var episodes = _apiClient.GetEpisodesAsync().GetAwaiter().GetResult();
+
+            if (seasons.Count == 0 && campaigns.Count == 0 && episodes.Count == 0)
+            {
+                if (string.IsNullOrWhiteSpace(json) || json == "{}")
+                    return null;
+
+                var guide = JsonSerializer.Deserialize<ShowData>(json);
+                if (guide == null)
+                    return null;
+
+                guide.LinkParents();
+                return guide;
+            }
+
+            var data = new ShowData { ShowName = "Dungeon Masters" };
+
+            foreach (var seasonDto in seasons)
+            {
+                var season = new Season
+                {
+                    Id = TryParseGuid(seasonDto.Id, Guid.NewGuid()),
+                    Number = seasonDto.Number,
+                    Title = seasonDto.Name,
+                    Year = seasonDto.Year ?? "",
+                    Description = seasonDto.Description ?? "",
+                    LastEdited = seasonDto.UpdatedAt,
+                    IsExpanded = true
+                };
+                data.Seasons.Add(season);
+            }
+
+            foreach (var campaignDto in campaigns)
+            {
+                var season = data.Seasons.FirstOrDefault(s => s.Id == TryParseGuid(campaignDto.SeasonId, Guid.Empty));
+                if (season == null)
+                    continue;
+
+                var campaign = new Campaign
+                {
+                    Id = TryParseGuid(campaignDto.Id, Guid.NewGuid()),
+                    Number = campaignDto.Number,
+                    Title = campaignDto.Name,
+                    DungeonMaster = campaignDto.DungeonMaster ?? "",
+                    Setting = campaignDto.Setting ?? "",
+                    Description = campaignDto.Description ?? "",
+                    CoverImage = campaignDto.CoverImage ?? "",
+                    FilmingStart = campaignDto.FilmingStart,
+                    FilmingEnd = campaignDto.FilmingEnd,
+                    FilmingLocation = campaignDto.FilmingLocation ?? "",
+                    Season = season,
+                    SeasonId = season.Id,
+                    LastEdited = campaignDto.UpdatedAt
+                };
+                foreach (var character in campaignDto.Characters)
+                    campaign.Characters.Add(new CastMember
+                    {
+                        Id = character.Id,
+                        PlayerName = character.PlayerName ?? "",
+                        CharacterName = character.CharacterName ?? "",
+                        CharacterSummary = character.CharacterSummary ?? "",
+                        CharacterDescription = character.CharacterDescription ?? "",
+                        ImagePath = character.ImagePath ?? ""
+                    });
+                season.Campaigns.Add(campaign);
+            }
+
+            foreach (var episodeDto in episodes)
+            {
+                var campaign = data.Seasons
+                    .SelectMany(s => s.Campaigns)
+                    .FirstOrDefault(c => c.Id == TryParseGuid(episodeDto.CampaignId, Guid.Empty));
+                if (campaign == null)
+                    continue;
+
+                var episode = new Episode
+                {
+                    Id = TryParseGuid(episodeDto.Id, Guid.NewGuid()),
+                    Number = episodeDto.Number,
+                    Title = episodeDto.Name,
+                    DungeonMaster = episodeDto.DungeonMaster ?? "",
+                    DateFilmed = episodeDto.DateFilmed,
+                    FilmingLocation = episodeDto.FilmingLocation ?? "",
+                    Runtime = episodeDto.Runtime ?? "",
+                    Synopsis = episodeDto.Summary ?? "",
+                    ProductionNotes = episodeDto.ProductionNotes ?? "",
+                    Campaign = campaign,
+                    CampaignId = campaign.Id,
+                    LastEdited = episodeDto.UpdatedAt
+                };
+                foreach (var castId in episodeDto.CastIds)
+                    episode.CastIds.Add(castId);
+                foreach (var guest in episodeDto.GuestCast)
+                    episode.GuestCast.Add(new CastMember
+                    {
+                        Id = guest.Id,
+                        PlayerName = guest.PlayerName ?? "",
+                        CharacterName = guest.CharacterName ?? "",
+                        CharacterSummary = guest.CharacterSummary ?? "",
+                        CharacterDescription = guest.CharacterDescription ?? "",
+                        ImagePath = guest.ImagePath ?? ""
+                    });
+                foreach (var moment in episodeDto.KeyMoments)
+                    episode.KeyMoments.Add(new KeyMoment
+                    {
+                        Timestamp = moment.Timestamp ?? "",
+                        Description = moment.Description ?? ""
+                    });
+                foreach (var airDate in episodeDto.AirDates)
+                    episode.AirDates.Add(new AirDate
+                    {
+                        Date = airDate.Date,
+                        Platform = airDate.Platform ?? "",
+                        Notes = airDate.Notes ?? ""
+                    });
+                campaign.Episodes.Add(episode);
+            }
+
+            data.LinkParents();
+            return data;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static Guid TryParseGuid(string id, Guid fallback)
+    {
+        return Guid.TryParse(id, out var guid) ? guid : fallback;
     }
 
     // If the file couldn't be read, never overwrite it automatically.
@@ -177,6 +344,112 @@ public partial class MainViewModel : ObservableObject
 
         CommitPendingEdits?.Invoke();
 
+        if (_apiClient != null)
+        {
+            var versionBeforeSave = _apiClient.GuideVersion;
+            _busy = true;
+            try
+            {
+                var json = JsonSerializer.Serialize(Data);
+                if (CurrentPage is Episode episode)
+                {
+                    if (!Data.AllEpisodes.Any(item => item.Id == episode.Id))
+                    {
+                        _apiClient.DeleteEpisodeAsync(episode.Id.ToString()).GetAwaiter().GetResult();
+                        StatusText = "Deleted episode from API";
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var savedEpisode = _apiClient.UpdateEpisodeAsync(ToEpisodeDto(episode)).GetAwaiter().GetResult();
+                            episode.LastEdited = savedEpisode.UpdatedAt;
+                            StatusText = $"Saved episode to API {DateTime.Now:t}";
+                        }
+                        catch (HttpRequestException ex) when (
+                            ex.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
+                        {
+                            SaveGuideToApi(json);
+                            StatusText = $"Saved guide to API {DateTime.Now:t}";
+                        }
+                    }
+                }
+                else if (CurrentPage is Season season)
+                {
+                    if (!Data.Seasons.Any(item => item.Id == season.Id))
+                    {
+                        _apiClient.DeleteSeasonAsync(season.Id.ToString()).GetAwaiter().GetResult();
+                        StatusText = "Deleted season from API";
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var savedSeason = _apiClient.UpdateSeasonAsync(ToSeasonDto(season)).GetAwaiter().GetResult();
+                            season.LastEdited = savedSeason.UpdatedAt;
+                            StatusText = $"Saved season to API {DateTime.Now:t}";
+                        }
+                        catch (HttpRequestException ex) when (
+                            ex.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
+                        {
+                            SaveGuideToApi(json);
+                            StatusText = $"Saved guide to API {DateTime.Now:t}";
+                        }
+                    }
+                }
+                else if (CurrentPage is Campaign or CastRosterPage)
+                {
+                    var campaign = CurrentPage is Campaign currentCampaign
+                        ? currentCampaign
+                        : ((CastRosterPage)CurrentPage).Campaign;
+                    if (!Data.AllCampaigns.Any(item => item.Id == campaign.Id))
+                    {
+                        _apiClient.DeleteCampaignAsync(campaign.Id.ToString()).GetAwaiter().GetResult();
+                        StatusText = "Deleted campaign from API";
+                    }
+                    else
+                    {
+                        try
+                        {
+                            var savedCampaign = _apiClient.UpdateCampaignAsync(ToCampaignDto(campaign)).GetAwaiter().GetResult();
+                            campaign.LastEdited = savedCampaign.UpdatedAt;
+                            StatusText = $"Saved campaign to API {DateTime.Now:t}";
+                        }
+                        catch (HttpRequestException ex) when (
+                            ex.StatusCode is System.Net.HttpStatusCode.NotFound or System.Net.HttpStatusCode.BadRequest)
+                        {
+                            SaveGuideToApi(json);
+                            StatusText = $"Saved guide to API {DateTime.Now:t}";
+                        }
+                    }
+                }
+                else
+                {
+                    SaveGuideToApi(json);
+                    StatusText = $"Saved guide to API {DateTime.Now:t}";
+                }
+                if (versionBeforeSave == _loadedRemoteVersion)
+                    _loadedRemoteVersion = _apiClient.GuideVersion;
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+            {
+                StatusText = "Save conflict: the server has newer changes";
+                MessageBox.Show(
+                    "Someone saved newer changes to the guide. Your edit was not written; the guide will refresh when you finish editing.",
+                    "Guide changed on server", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            catch (Exception ex)
+            {
+                StatusText = "Save failed";
+                MessageBox.Show($"Could not save the guide to the API:\n{ex.Message}", "DMAP Guide", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                _busy = false;
+            }
+            return;
+        }
+
         _busy = true;
         bool tookTheirs = false;
         try
@@ -200,6 +473,149 @@ public partial class MainViewModel : ObservableObject
         }
 
         if (tookTheirs) RefreshPage();
+    }
+
+    private static EpisodeDto ToEpisodeDto(Episode episode) => new()
+    {
+        Id = episode.Id.ToString(),
+        CampaignId = (episode.Campaign?.Id ?? episode.CampaignId).ToString(),
+        Number = episode.Number,
+        Name = episode.Title,
+        DungeonMaster = episode.DungeonMaster,
+        Summary = episode.Synopsis,
+        DateFilmed = episode.DateFilmed,
+        FilmingLocation = episode.FilmingLocation,
+        Runtime = episode.Runtime,
+        ProductionNotes = episode.ProductionNotes,
+        CastIds = episode.CastIds.ToList(),
+        GuestCast = episode.GuestCast.Select(member => new EpisodeCastMemberDto
+        {
+            Id = member.Id,
+            PlayerName = member.PlayerName,
+            CharacterName = member.CharacterName,
+            CharacterSummary = member.CharacterSummary,
+            CharacterDescription = member.CharacterDescription,
+            ImagePath = member.ImagePath
+        }).ToList(),
+        KeyMoments = episode.KeyMoments.Select(moment => new EpisodeKeyMomentDto
+        {
+            Timestamp = moment.Timestamp,
+            Description = moment.Description
+        }).ToList(),
+        AirDates = episode.AirDates.Select(airDate => new EpisodeAirDateDto
+        {
+            Date = airDate.Date,
+            Platform = airDate.Platform,
+            Notes = airDate.Notes
+        }).ToList(),
+        UpdatedAt = episode.LastEdited
+    };
+
+    private static SeasonDto ToSeasonDto(Season season) => new()
+    {
+        Id = season.Id.ToString(),
+        Number = season.Number,
+        Name = season.Title,
+        Year = season.Year,
+        Description = season.Description,
+        UpdatedAt = season.LastEdited
+    };
+
+    private void CreateRemoteSeason(Season season)
+    {
+        var versionBeforeCreate = _apiClient!.GuideVersion;
+        try
+        {
+            try
+            {
+                _apiClient!.CreateSeasonAsync(ToSeasonDto(season)).GetAwaiter().GetResult();
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                SaveGuideToApi(JsonSerializer.Serialize(Data));
+            }
+            if (season.LastEdited == null)
+                season.LastEdited = _apiClient.GetSeasonsAsync().GetAwaiter().GetResult()
+                    .FirstOrDefault(item => item.Id == season.Id.ToString())?.UpdatedAt;
+            if (versionBeforeCreate == _loadedRemoteVersion)
+                _loadedRemoteVersion = _apiClient.GuideVersion;
+            StatusText = $"Created season in API {DateTime.Now:t}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = "Season creation failed";
+            MessageBox.Show($"Could not create the season in the API:\n{ex.Message}", "DMAP Guide", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void CreateRemoteCampaign(Campaign campaign)
+    {
+        var versionBeforeCreate = _apiClient!.GuideVersion;
+        try
+        {
+            try
+            {
+                _apiClient!.CreateCampaignAsync(ToCampaignDto(campaign)).GetAwaiter().GetResult();
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                SaveGuideToApi(JsonSerializer.Serialize(Data));
+            }
+            if (campaign.LastEdited == null)
+                campaign.LastEdited = _apiClient.GetCampaignsAsync().GetAwaiter().GetResult()
+                    .FirstOrDefault(item => item.Id == campaign.Id.ToString())?.UpdatedAt;
+            if (versionBeforeCreate == _loadedRemoteVersion)
+                _loadedRemoteVersion = _apiClient.GuideVersion;
+            StatusText = $"Created campaign in API {DateTime.Now:t}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = "Campaign creation failed";
+            MessageBox.Show($"Could not create the campaign in the API:\n{ex.Message}", "DMAP Guide", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private static CampaignDto ToCampaignDto(Campaign campaign) => new()
+    {
+        Id = campaign.Id.ToString(),
+        SeasonId = (campaign.Season?.Id ?? campaign.SeasonId).ToString(),
+        Number = campaign.Number,
+        Name = campaign.Title,
+        DungeonMaster = campaign.DungeonMaster,
+        Setting = campaign.Setting,
+        Description = campaign.Description,
+        CoverImage = campaign.CoverImage,
+        FilmingStart = campaign.FilmingStart,
+        FilmingEnd = campaign.FilmingEnd,
+        FilmingLocation = campaign.FilmingLocation,
+        Characters = campaign.Characters.Select(member => new EpisodeCastMemberDto
+        {
+            Id = member.Id,
+            PlayerName = member.PlayerName,
+            CharacterName = member.CharacterName,
+            CharacterSummary = member.CharacterSummary,
+            CharacterDescription = member.CharacterDescription,
+            ImagePath = member.ImagePath
+        }).ToList(),
+        UpdatedAt = campaign.LastEdited
+    };
+
+    private void SaveGuideToApi(string json)
+    {
+        _apiClient!.SaveGuideJsonAsync(json, _loadedRemoteVersion).GetAwaiter().GetResult();
+        _loadedRemoteVersion = _apiClient.GuideVersion;
+
+        var seasons = _apiClient.GetSeasonsAsync().GetAwaiter().GetResult();
+        foreach (var season in Data.Seasons)
+            season.LastEdited = seasons.FirstOrDefault(item => item.Id == season.Id.ToString())?.UpdatedAt;
+
+        var campaigns = _apiClient.GetCampaignsAsync().GetAwaiter().GetResult();
+        foreach (var campaign in Data.AllCampaigns)
+            campaign.LastEdited = campaigns.FirstOrDefault(item => item.Id == campaign.Id.ToString())?.UpdatedAt;
+
+        var episodes = _apiClient.GetEpisodesAsync().GetAwaiter().GetResult();
+        foreach (var episode in Data.AllEpisodes)
+            episode.LastEdited = episodes.FirstOrDefault(item => item.Id == episode.Id.ToString())?.UpdatedAt;
     }
 
     private static bool AskKeepMine(object page, string who)
@@ -276,6 +692,12 @@ public partial class MainViewModel : ObservableObject
     {
         if (_busy || _readOnlyAfterLoadError) return;
 
+        if (_apiClient != null)
+        {
+            SyncRemoteNow();
+            return;
+        }
+
         _busy = true;
         SyncResult result;
         try
@@ -301,6 +723,53 @@ public partial class MainViewModel : ObservableObject
 
         if (result.Changed) RefreshPage();
         ShowPageInfo();
+    }
+
+    private void SyncRemoteNow()
+    {
+        _busy = true;
+        try
+        {
+            _apiClient!.GetGuideJsonAsync().GetAwaiter().GetResult();
+            var version = _apiClient.GuideVersion;
+            if (!version.HasValue || version == _loadedRemoteVersion)
+                return;
+
+            if (IsEditing)
+            {
+                StatusText = "Remote changes detected. Finish editing to load them; a conflicting save will be rejected.";
+                return;
+            }
+
+            var remoteData = TryLoadFromApi();
+            if (remoteData == null)
+                return;
+            _loadedRemoteVersion = _apiClient.GuideVersion ?? version;
+
+            var oldPage = CurrentPage;
+            object? nextPage = oldPage switch
+            {
+                Season season => remoteData.Seasons.FirstOrDefault(item => item.Id == season.Id),
+                Campaign campaign => remoteData.AllCampaigns.FirstOrDefault(item => item.Id == campaign.Id),
+                CastRosterPage roster => remoteData.AllCampaigns.FirstOrDefault(item => item.Id == roster.Campaign.Id)?.RosterPage,
+                Episode episode => remoteData.AllEpisodes.FirstOrDefault(item => item.Id == episode.Id),
+                ScheduleViewModel => new ScheduleViewModel(this),
+                _ => new PrologueViewModel(this)
+            };
+
+            Data = remoteData;
+            _loadedRemoteVersion = version;
+            Navigate(nextPage ?? new PrologueViewModel(this));
+            StatusText = $"Synced from API {DateTime.Now:t}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"API sync failed: {ex.Message}";
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
     /// <summary>Redraw pages built from the whole guide (the prologue and schedule) after changes.</summary>
@@ -331,8 +800,12 @@ public partial class MainViewModel : ObservableObject
     {
         int number = Data.Seasons.Select(s => s.Number).DefaultIfEmpty(0).Max() + 1;
         var season = new Season { Number = number, IsExpanded = true };
-        Data.Seasons.Add(season);
         Save();
+        Data.Seasons.Add(season);
+        if (_apiClient != null)
+            CreateRemoteSeason(season);
+        else
+            Save();
         Navigate(season);
         IsEditing = true;
     }
@@ -358,8 +831,12 @@ public partial class MainViewModel : ObservableObject
         // Campaign numbers run across the whole show (1, 2, 3...).
         int number = Data.AllCampaigns.Select(c => c.Number).DefaultIfEmpty(0).Max() + 1;
         var campaign = new Campaign { Number = number, Season = season, IsExpanded = true };
-        season.Campaigns.Add(campaign);
         Save();
+        season.Campaigns.Add(campaign);
+        if (_apiClient != null)
+            CreateRemoteCampaign(campaign);
+        else
+            Save();
         Navigate(campaign);
         IsEditing = true;
     }
@@ -398,9 +875,35 @@ public partial class MainViewModel : ObservableObject
         foreach (var id in castIds) episode.CastIds.Add(id);
 
         episode.Attach();
+        Save();
         campaign.Episodes.Add(episode);
         campaign.IsExpanded = true;
-        Save();
+        if (_apiClient != null)
+        {
+            var versionBeforeCreate = _apiClient.GuideVersion;
+            try
+            {
+                var savedEpisode = _apiClient.CreateEpisodeAsync(ToEpisodeDto(episode)).GetAwaiter().GetResult();
+                episode.LastEdited = savedEpisode.UpdatedAt;
+                if (versionBeforeCreate == _loadedRemoteVersion)
+                    _loadedRemoteVersion = _apiClient.GuideVersion;
+                StatusText = $"Created episode in API {DateTime.Now:t}";
+            }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                SaveGuideToApi(JsonSerializer.Serialize(Data));
+                StatusText = $"Saved guide to API {DateTime.Now:t}";
+            }
+            catch (Exception ex)
+            {
+                StatusText = "Episode creation failed";
+                MessageBox.Show($"Could not create the episode in the API:\n{ex.Message}", "DMAP Guide", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        else
+        {
+            Save();
+        }
         Navigate(episode);
         IsEditing = true;
     }
