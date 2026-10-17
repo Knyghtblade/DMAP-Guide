@@ -67,6 +67,23 @@ try {
     $accessKey = ([System.IO.File]::ReadAllText($keyFile)).Trim()
 
     $apiBaseUrl = "https://$hostName/"
+
+    # If DMAP Guide on this PC already uses this server, give it the current key too.
+    $hostSettingsPath = Join-Path $env:APPDATA 'DMAP Guide\settings.json'
+    if (Test-Path $hostSettingsPath) {
+        try {
+            $hostSettings = Get-Content $hostSettingsPath -Raw | ConvertFrom-Json
+            $address = "$($hostSettings.ApiBaseUrl)"
+            if ($address -match '^https?://(localhost|127\.0\.0\.1)(:5080)?/?$' -or $address.TrimEnd('/') -eq $apiBaseUrl.TrimEnd('/')) {
+                $hostSettings.ApiKey = $accessKey
+                [System.IO.File]::WriteAllText($hostSettingsPath, ($hostSettings | ConvertTo-Json), [System.Text.UTF8Encoding]::new($false))
+                Write-Host 'Updated DMAP Guide on this PC with the access key.' -ForegroundColor Cyan
+            }
+        }
+        catch {
+            Write-Host 'Could not update DMAP Guide''s settings on this PC; enter the access key on its Settings page.' -ForegroundColor Yellow
+        }
+    }
     $settings = [ordered]@{
         UseServer = $true
         ApiBaseUrl = $apiBaseUrl
