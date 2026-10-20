@@ -20,6 +20,12 @@ public static class GuideRecords
     /// <summary>The show-wide record's id (seasons, campaigns and episodes use their GUID).</summary>
     public const string GuideId = "guide";
 
+    /// <summary>
+    /// The id used for "someone is editing" warnings on the Cast page, which edits the
+    /// show-wide record; that record has no GUID of its own.
+    /// </summary>
+    public static readonly Guid GuideLockId = new("00000000-0000-0000-0000-00000000da7a");
+
     /// <summary>Child lists live in their own records.</summary>
     private static readonly string[] ChildLists = { "Seasons", "Campaigns", "Episodes" };
 
@@ -83,6 +89,19 @@ public static class GuideRecords
     {
         var node = JsonSerializer.SerializeToNode(record, record.GetType(), JsonOptions)!.AsObject();
         foreach (var list in ChildLists) node.Remove(list);
+        return node.ToJsonString(JsonOptions);
+    }
+
+    /// <summary>
+    /// The record exactly as it was sent, with the "last edited" stamp the server gave it. Used to
+    /// remember what the server holds without re-reading the live page, which may have been
+    /// edited again while the save was on its way.
+    /// </summary>
+    public static string WithStamp(string json, string editedBy, DateTime? editedAt)
+    {
+        var node = JsonNode.Parse(json)!.AsObject();
+        node[nameof(TreeNode.LastEditedBy)] = editedBy;
+        node[nameof(TreeNode.LastEdited)] = editedAt is DateTime at ? JsonValue.Create(at) : null;
         return node.ToJsonString(JsonOptions);
     }
 

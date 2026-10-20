@@ -47,7 +47,7 @@
         <!-- Cast -->
         <HorizontalStackLayout Style="{StaticResource SectionRow}">
             <Label Text="The Adventuring Party" Style="{StaticResource SectionHeader}"/>
-            <c:TomeButton Text="Cast &amp; Characters →" FontSize="10" Margin="12,0,0,0" VerticalOptions="Center" Clicked="OnOpenRoster"/>
+            <c:TomeButton Text="Characters →" FontSize="10" Margin="12,0,0,0" VerticalOptions="Center" Clicked="OnOpenRoster"/>
         </HorizontalStackLayout>
 
         <!-- Edit mode: tick who's in this episode -->
@@ -56,7 +56,7 @@
                 <VerticalStackLayout>
                     <Label Text="WHO'S AT THE TABLE THIS EPISODE?" Style="{StaticResource FieldLabel}" Margin="2,0,0,4"/>
                     <Label Style="{StaticResource EmptyNote}"
-                           Text="This campaign has no characters yet. Add them on the Cast &amp; Characters page."
+                           Text="This campaign has no characters yet. Add them on the Characters page."
                            IsVisible="{Binding HasCampaignCharacters, Converter={StaticResource Not}}"/>
                     <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding CastChoices}">
                         <BindableLayout.ItemTemplate>

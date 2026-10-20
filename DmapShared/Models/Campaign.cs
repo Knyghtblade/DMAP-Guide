@@ -18,6 +18,8 @@ public partial class Campaign : TreeNode
     [ObservableProperty] private string _dungeonMaster = "";
     [ObservableProperty] private string _setting = "";
     [ObservableProperty] private string _description = "";
+    /// <summary>The book this campaign is played from; <see cref="CoverImage"/> is its cover art.</summary>
+    [ObservableProperty] private string _bookTitle = "";
     [ObservableProperty] private string _coverImage = "";
 
     /// <summary>When the campaign is filmed (usually one block for all its episodes).</summary>
@@ -46,7 +48,7 @@ public partial class Campaign : TreeNode
     /// <summary>Which season this belongs to (saved in the campaign's own file).</summary>
     public Guid SeasonId { get; set; }
 
-    /// <summary>The "Cast &amp; Characters" page shown in the table of contents.</summary>
+    /// <summary>The "Characters" page shown in the table of contents.</summary>
     [JsonIgnore] public CastRosterPage RosterPage { get; }
 
     /// <summary>What the table of contents shows under the campaign: the cast page, then episodes.</summary>
@@ -60,6 +62,12 @@ public partial class Campaign : TreeNode
     }
 
     private void OnEpisodesChanged(object? sender, NotifyCollectionChangedEventArgs e) => RebuildChildren();
+
+    // Episodes without a Dungeon Master of their own show the campaign's.
+    partial void OnDungeonMasterChanged(string value)
+    {
+        foreach (var episode in _episodes) episode.RefreshDungeonMaster();
+    }
 
     private void RebuildChildren()
     {
@@ -89,7 +97,7 @@ public class CastRosterPage : TreeNode
 
     public CastRosterPage(Campaign campaign) => Campaign = campaign;
 
-    public override string DisplayName => "Cast & Characters";
+    public override string DisplayName => "Characters";
     public override TreeNode? ParentNode => Campaign;
 
     /// <summary>Fill in each character's "Appears in" line (called when the page opens).</summary>

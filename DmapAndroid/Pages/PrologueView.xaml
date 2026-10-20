@@ -7,7 +7,7 @@
              x:DataType="vm:PrologueViewModel">
     <VerticalStackLayout Spacing="2" Padding="2,6,6,24">
         <Image x:Name="Logo" WidthRequest="220" HeightRequest="80" Aspect="AspectFit" HorizontalOptions="Center"/>
-        <Label Text="The Producer's Guide" FontFamily="DmapDisplay" FontSize="21" TextColor="{StaticResource RubricColor}"
+        <Label Text="The Production Guide" FontFamily="DmapDisplay" FontSize="21" TextColor="{StaticResource RubricColor}"
                HorizontalOptions="Center" Margin="0,6,0,0"/>
         <Label Style="{StaticResource Flourish}"/>
 

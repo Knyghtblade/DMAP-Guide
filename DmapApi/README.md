@@ -1,5 +1,7 @@
 # DMAP API
 
+> **Paused (18 Oct 2026).** The desktop app now opens the guide from a shared OneDrive folder and never uses this server; it's kept for the phone app, which is also paused. The launcher scripts mentioned below were removed from the repo and live in git history. To run the server by hand: `dotnet run --project DmapApi -- --urls http://127.0.0.1:5080`.
+
 The shared guide server. It keeps the guide one record per page (the show details, and each season, campaign and episode) in SQLite, along with the pictures and the "someone is editing this page" markers. The desktop and phone apps both use it through `DmapShared`.
 
 ## Where the data lives

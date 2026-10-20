@@ -1,5 +1,9 @@
 DMAP GUIDE ON YOUR ANDROID PHONE
 
+PAUSED (18 Oct 2026): the phone app and the guide server are not in use while the guide is
+shared from a OneDrive folder. The launcher scripts named below were removed from the repo;
+they're in git history (commit before "Share the app from a OneDrive folder") if the phone comes back.
+
 The phone app is the same tome as the desktop app: the same pages, the same Edit Page / Done,
 and the same shared guide. It always uses the shared guide server (it can't open a folder).
 

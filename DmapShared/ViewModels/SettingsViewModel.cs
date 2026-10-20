@@ -10,8 +10,18 @@ public partial class SettingsViewModel : ObservableObject
 
     public MainViewModel Main { get; }
 
-    /// <summary>The desktop can also keep the guide in a folder; the phone always uses the server.</summary>
+    /// <summary>"DMAP Guide version 1.0.4", so people can check they're on the same build.</summary>
+    public string VersionText => $"DMAP Guide version {Main.AppVersion}";
+
+    /// <summary>The desktop keeps the guide in a folder; the phone uses the server.</summary>
     public bool CanUseFolder => Main.Platform.SupportsFolders;
+    public bool CanUseServer => Main.Platform.SupportsServer;
+
+    /// <summary>Only an app that can do both gets the choice.</summary>
+    public bool CanChooseWhere => CanUseFolder && CanUseServer;
+
+    /// <summary>The guide was opened from the folder beside the app, so it can't be moved from here.</summary>
+    public bool FolderIsFixed => Main.FolderIsFixed;
 
     [ObservableProperty] private string _userName;
 
@@ -27,7 +37,7 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty] private string _problem = "";
     [ObservableProperty] private bool _isWorking;
 
-    public string DataFolder => _settings.DataFolder;
+    public string DataFolder => Main.FolderIsFixed ? Main.Location : _settings.DataFolder;
 
     public bool UseFolder
     {
@@ -40,7 +50,7 @@ public partial class SettingsViewModel : ObservableObject
         Main = main;
         _settings = settings;
         _userName = settings.UserName;
-        _useServer = settings.UseServer || !main.Platform.SupportsFolders;
+        _useServer = (settings.UseServer && main.Platform.SupportsServer) || !main.Platform.SupportsFolders;
         _serverAddress = settings.ServerAddress;
         _accessKey = settings.AccessKey;
     }
@@ -49,7 +59,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         var next = _settings.Clone();
         next.UserName = UserName ?? "";
-        next.UseServer = UseServer || !CanUseFolder;
+        next.UseServer = (UseServer && CanUseServer) || !CanUseFolder;
         next.ServerAddress = ServerAddress ?? "";
         next.AccessKey = AccessKey ?? "";
         return next;

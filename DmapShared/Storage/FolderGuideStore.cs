@@ -49,6 +49,28 @@ public class FolderGuideStore : IGuideStore
     public static bool HasData(string folder) =>
         File.Exists(Path.Combine(folder, GuideFile)) || File.Exists(Path.Combine(folder, LegacyFileName));
 
+    /// <summary>
+    /// Whether this user may change the guide. A folder shared from OneDrive with "Can view"
+    /// is read-only on disk; this checks by opening the guide file for writing, without
+    /// writing anything (so nothing is changed and OneDrive has nothing to sync).
+    /// </summary>
+    public bool CanWrite()
+    {
+        try
+        {
+            using var _ = new FileStream(Path.Combine(Folder, GuideFile), FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
+            return true;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
+        }
+        catch (Exception)
+        {
+            return true; // missing or busy: let saving report any real problem
+        }
+    }
+
     // ============================================================
     // LOAD
     // ============================================================

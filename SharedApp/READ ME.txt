@@ -1,0 +1,55 @@
+DMAP Guide - The Production Guide to Dungeon Masters
+=====================================================
+
+GETTING THE FOLDER ONTO YOUR PC (once)
+--------------------------------------
+The app only works from a copy of this folder that OneDrive keeps on your PC.
+Opening "DMAP Guide.exe" from the OneDrive website does NOT work: the website
+hands you a lone copy of the app with no guide beside it.
+
+1. Make sure the OneDrive app on your PC is signed in with your work account
+   (the cloud icon near the clock should not say "sign in" or show an error).
+2. On the OneDrive website, open "Shared", find the "DMAP Guide" folder, and
+   choose "Add shortcut to My files".
+3. Open File Explorer, click OneDrive on the left, and open the "DMAP Guide"
+   folder that now appears. You should see "DMAP Guide.exe", a folder called
+   "guide" and this READ ME side by side.
+4. Right-click that folder and choose "Always keep on this device". Wait for
+   the green ticks.
+5. Right-click "DMAP Guide.exe", choose "Send to", then "Desktop (create
+   shortcut)". From now on, open the guide from that desktop shortcut.
+
+OPENING THE GUIDE
+-----------------
+Double-click the desktop shortcut (or "DMAP Guide.exe" in this folder).
+Nothing needs installing.
+
+The first time, Windows may say "Windows protected your PC".
+Click "More info", then "Run anyway". It only asks once.
+
+If the app opens with a page saying "The guide isn't beside the app" or "This
+copy of the guide isn't shared", it was opened from a download or a copy that
+OneDrive isn't syncing. Close it, delete that copy, and follow the steps above.
+
+If "DMAP Guide.exe" is greyed out, has a cloud icon, or won't start, this folder
+hasn't finished syncing to your PC yet. In OneDrive, right-click the folder and
+choose "Always keep on this device", wait for the ticks, then try again.
+
+If you can read the guide but there is no "Edit Page" button, the folder has been
+shared with you as view-only. Ask the producer if you need to make changes.
+
+SEEING EACH OTHER'S CHANGES
+---------------------------
+Changes other people make appear on their own while the guide is open, usually
+within a minute. Press the "Refresh" button (or F5) at the top of the page to
+save your changes and pick up everyone else's straight away.
+
+To check you are on the shared guide, open Settings. "Kept in" should show a
+path inside OneDrive that ends in "DMAP Guide\guide".
+
+WHICH VERSION AM I ON?
+----------------------
+The version number is in the title bar of the window and at the bottom of the
+Settings page, e.g. "DMAP Guide 1.0.4". Everyone should see the same number.
+If a red note says a newer DMAP Guide has been used with this guide, close the
+app and open "DMAP Guide.exe" from the shared folder again.

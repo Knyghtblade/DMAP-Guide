@@ -6,6 +6,12 @@ public interface IPlatformServices
     /// <summary>False on the phone: it can only open the shared server, not a folder.</summary>
     bool SupportsFolders { get; }
 
+    /// <summary>
+    /// False on the desktop: it only opens a folder (the shared OneDrive folder the app
+    /// ships in), so nobody needs a server address or an access key to open the guide.
+    /// </summary>
+    bool SupportsServer { get; }
+
     Task AlertAsync(string title, string message);
 
     /// <summary>Ask a two-way question; true for <paramref name="yes"/>.</summary>
@@ -25,6 +31,12 @@ public interface IPlatformServices
 
     /// <summary>A folder on this device for downloaded pictures.</summary>
     string CacheFolder { get; }
+
+    /// <summary>Open a web address in the device's browser.</summary>
+    void OpenLink(string url);
+
+    /// <summary>This app's version, e.g. "1.0.4" (shown in Settings; the shared guide remembers the newest seen).</summary>
+    string AppVersion { get; }
 }
 
 /// <summary>Where the guide lives and who's using it. Saved per user, per device.</summary>

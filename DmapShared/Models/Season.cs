@@ -24,4 +24,7 @@ public partial class Season : TreeNode
         string.IsNullOrWhiteSpace(Title) ? $"Season {Number}" : $"Season {Number} · {Title}";
 
     [JsonIgnore] public override TreeNode? ParentNode => null;
+
+    /// <summary>The guide this season is in (so episodes can reach the show's cast). Not saved.</summary>
+    [JsonIgnore] public ShowData? Show { get; set; }
 }

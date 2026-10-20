@@ -39,6 +39,10 @@
         <Label Style="{StaticResource Body}" TextColor="{StaticResource RubricColor}" Margin="2,12,0,0"
                Text="{Binding Problem}" IsVisible="{Binding Problem, Converter={StaticResource NotEmpty}}"/>
 
+        <Label Style="{StaticResource EmptyNote}" Margin="2,20,0,0" Text="{Binding VersionText, Mode=OneWay}"/>
+        <Label Style="{StaticResource EmptyNote}" Margin="2,2,0,0" TextColor="{StaticResource RubricColor}"
+               Text="{Binding Main.VersionWarning}" IsVisible="{Binding Main.VersionWarning, Converter={StaticResource NotEmpty}}"/>
+
         <c:TomeButton Text="Use these settings" Margin="0,14,0,0" Command="{Binding ApplyCommand}"
                       IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"/>
     </VerticalStackLayout>

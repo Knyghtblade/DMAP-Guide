@@ -9,6 +9,15 @@ public partial class ShowData : ObservableObject
 {
     [ObservableProperty] private string _showName = "Dungeon Masters";
 
+    /// <summary>The show's Dungeon Masters (the "Cast" page). Campaign and episode pages pick from these.</summary>
+    public ObservableCollection<CastMember> DungeonMasters { get; set; } = new();
+
+    /// <summary>The show's cast: the real people, across every campaign (the "Cast" page).</summary>
+    public ObservableCollection<CastMember> Cast { get; set; } = new();
+
+    /// <summary>The show's guest stars (the "Cast" page). Episode pages pick from these.</summary>
+    public ObservableCollection<CastMember> Guests { get; set; } = new();
+
     public ObservableCollection<Season> Seasons { get; set; } = new();
 
     [JsonIgnore] public IEnumerable<Campaign> AllCampaigns => Seasons.SelectMany(s => s.Campaigns);
@@ -32,6 +41,8 @@ public partial class ShowData : ObservableObject
     public void LinkParents()
     {
         foreach (var s in Seasons)
+        {
+            s.Show = this;
             foreach (var c in s.Campaigns)
             {
                 c.Season = s;
@@ -42,6 +53,7 @@ public partial class ShowData : ObservableObject
                     MoveEpisodeCastToCampaign(c, e);
                 }
             }
+        }
     }
 
     // Earlier versions stored full cast details on each episode. Fold them into
@@ -68,9 +80,43 @@ public partial class ShowData : ObservableObject
         e.Cast = null;
     }
 
+    /// <summary>
+    /// Fill in each person's line on the Cast page: what a cast member plays (matching the
+    /// campaigns' character lists by name), which campaigns a Dungeon Master runs, and which
+    /// episodes a guest star is in. Called when the Cast page opens.
+    /// </summary>
+    public void RefreshCastAppearances()
+    {
+        static bool SameName(string a, string b) =>
+            a.Trim().Length > 0 && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        foreach (var person in Cast)
+        {
+            var roles = AllCampaigns
+                .SelectMany(c => c.Characters
+                    .Where(x => SameName(x.PlayerName, person.PlayerName) && !string.IsNullOrWhiteSpace(x.CharacterName))
+                    .Select(x => $"{x.CharacterName.Trim()} in {c.DisplayName}"))
+                .ToList();
+            person.Appearances = roles.Count == 0 ? "" : "Plays " + string.Join("; ", roles);
+        }
+
+        foreach (var dm in DungeonMasters)
+        {
+            var runs = AllCampaigns.Where(c => SameName(c.DungeonMaster, dm.PlayerName)).Select(c => c.DisplayName).ToList();
+            dm.Appearances = runs.Count == 0 ? "" : "Runs " + string.Join("; ", runs);
+        }
+
+        foreach (var guest in Guests)
+        {
+            var eps = AllEpisodes.Where(e => e.GuestIds.Contains(guest.Id)).Select(e => e.Number.ToString()).ToList();
+            guest.Appearances = eps.Count == 0 ? "" : "Guest in episodes " + string.Join(", ", eps);
+        }
+    }
+
     /// <summary>Pictures finished downloading: redraw every cover and portrait.</summary>
     public void RefreshImages()
     {
+        foreach (var person in DungeonMasters.Concat(Cast).Concat(Guests)) person.RefreshImage();
         foreach (var c in AllCampaigns)
         {
             c.RefreshImages();

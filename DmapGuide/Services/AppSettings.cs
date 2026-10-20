@@ -18,6 +18,81 @@ public class AppSettings : ISettingsStore
         public string? UserName { get; set; }
     }
 
+    /// <summary>
+    /// The guide that ships beside the app: a "guide" folder next to the .exe (the shared
+    /// OneDrive folder layout). When it exists it's always the guide that opens, so nobody
+    /// has to set anything up.
+    /// </summary>
+    public static string? GuideFolderBesideApp =>
+        Directory.Exists(ExpectedGuideFolderBesideApp) ? ExpectedGuideFolderBesideApp : null;
+
+    /// <summary>Where the "guide" folder beside the app should be, whether or not it's there.</summary>
+    public static string ExpectedGuideFolderBesideApp => Path.Combine(AppContext.BaseDirectory, "guide");
+
+    /// <summary>
+    /// True for the app as shipped in the shared folder (built as one file by "Publish Shared
+    /// App"). A single-file app has no separate .dll on disk, so its location is empty. The
+    /// build run from the code folder (Run DMAP Guide.cmd) is not one file, and still uses the
+    /// folder in Settings when there's no guide beside it.
+    /// </summary>
+#pragma warning disable IL3000 // the empty location is exactly what's being checked for
+    public static bool IsPublishedAsOneFile => string.IsNullOrEmpty(typeof(AppSettings).Assembly.Location);
+#pragma warning restore IL3000
+
+    /// <summary>
+    /// Why the shared app can't be used from <paramref name="guideFolder"/>: it isn't inside a
+    /// folder that OneDrive keeps in sync on this PC, so nothing written there reaches anyone
+    /// else. That's what a folder downloaded (or unzipped) from the OneDrive website looks like.
+    /// Null when the folder is synced.
+    /// </summary>
+    public static string? NotSyncedProblem(string guideFolder)
+    {
+        var roots = OneDriveRoots();
+        string full = Path.GetFullPath(guideFolder).TrimEnd(Path.DirectorySeparatorChar);
+        if (roots.Any(root => full.StartsWith(root.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)))
+            return null;
+
+        string appFolder = Path.GetDirectoryName(full) ?? full;
+        string where = roots.Count == 0
+            ? "OneDrive isn't signed in on this PC, so no folder here is kept in sync."
+            : "OneDrive on this PC keeps these folders in sync:\n" + string.Join("\n", roots);
+        return "The folder this app was opened from isn't one that OneDrive keeps in sync on this PC. " +
+               "Changes made here would stay on this PC, and nobody else's changes would ever arrive.\n\n" +
+               "This usually means the shared folder was downloaded from the OneDrive website (or unzipped) instead of synced. " +
+               "Delete this copy. Then, on the OneDrive website, open \"Shared\", find the \"DMAP Guide\" folder and choose " +
+               "\"Add shortcut to My files\". Open File Explorer, click OneDrive on the left, open the \"DMAP Guide\" folder " +
+               "that appears there, and double-click \"DMAP Guide.exe\" in it.\n\n" +
+               $"The app was opened from:\n{appFolder}\n\n{where}";
+    }
+
+    /// <summary>Every folder OneDrive syncs on this PC (work and personal accounts).</summary>
+    private static List<string> OneDriveRoots()
+    {
+        var roots = new List<string>();
+        void Add(string? path)
+        {
+            if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path) &&
+                !roots.Any(r => string.Equals(r, path, StringComparison.OrdinalIgnoreCase)))
+                roots.Add(Path.GetFullPath(path));
+        }
+
+        foreach (string envVar in new[] { "OneDrive", "OneDriveCommercial", "OneDriveConsumer" })
+            Add(Environment.GetEnvironmentVariable(envVar));
+
+        try
+        {
+            using var accounts = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\OneDrive\Accounts");
+            foreach (string name in accounts?.GetSubKeyNames() ?? [])
+            {
+                using var account = accounts!.OpenSubKey(name);
+                Add(account?.GetValue("UserFolder") as string);
+            }
+        }
+        catch (Exception) { }
+
+        return roots;
+    }
+
     private static string SettingsPath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DMAP Guide", "settings.json");
 

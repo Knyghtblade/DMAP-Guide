@@ -26,6 +26,7 @@ public static class GuideTree
                 var season = existing as Season ?? s;
                 if (existing != null) CopyInto(s, season);
                 else index[s.Id] = s;
+                season.Show = data;
                 PlaceSorted(data.Seasons, season, x => x.Number);
                 return true;
             }

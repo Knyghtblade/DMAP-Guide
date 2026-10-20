@@ -29,7 +29,17 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Breadcrumb))]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyPropertyChangedFor(nameof(IsOnPrologue))]
+    [NotifyPropertyChangedFor(nameof(IsOnSchedule))]
+    [NotifyPropertyChangedFor(nameof(IsOnCast))]
+    [NotifyPropertyChangedFor(nameof(IsOnSettings))]
     private object? _currentPage;
+
+    // Which of the fixed pages is open (for highlighting its link in the menu).
+    public bool IsOnPrologue => CurrentPage is PrologueViewModel;
+    public bool IsOnSchedule => CurrentPage is ScheduleViewModel;
+    public bool IsOnCast => CurrentPage is CastPageViewModel;
+    public bool IsOnSettings => CurrentPage is SettingsViewModel;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
@@ -38,6 +48,11 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private string _statusText = "";
+
+    /// <summary>Set while a newer DMAP Guide than this one has been used with the shared guide.</summary>
+    [ObservableProperty] private string _versionWarning = "";
+
+    public string AppVersion => _platform.AppVersion;
 
     /// <summary>Set by the window: pushes the value of the text box being typed in.</summary>
     public Action? CommitPendingEdits { get; set; }
@@ -52,15 +67,41 @@ public partial class MainViewModel : ObservableObject
 
     public bool UsesServer => _store is ServerGuideStore;
 
-    public bool CanEdit => IsConnected && !_readOnlyAfterLoadError && CurrentPage is TreeNode;
+    /// <summary>Season, campaign, episode, Characters and Shoot Notes pages, plus the Cast page (part of the show-wide details).</summary>
+    public bool CanEdit => IsConnected && !IsReadOnly && CurrentPage is TreeNode or CastPageViewModel;
 
     /// <summary>Adding and deleting pages.</summary>
-    public bool CanChangePages => IsConnected && !_readOnlyAfterLoadError;
+    public bool CanChangePages => IsConnected && !IsReadOnly;
 
     public string UserName => _settings.UserName;
 
     // If the guide couldn't be read, never overwrite it automatically.
     private bool _readOnlyAfterLoadError;
+
+    /// <summary>The guide folder can be read but not written to (e.g. shared from OneDrive with "Can view").</summary>
+    private bool _folderReadOnly;
+
+    public bool IsReadOnly => _readOnlyAfterLoadError || _folderReadOnly;
+
+    /// <summary>The guide was opened from a fixed folder (beside the app, or "--data"), so Settings can't move it.</summary>
+    public bool FolderIsFixed => _folderOverride != null || RequiredFolder != null;
+
+    /// <summary>
+    /// The shared app (desktop, published as one file): the "guide" folder that must sit beside
+    /// DMAP Guide.exe. Only that folder is ever opened. If it's missing, which happens when the
+    /// .exe was opened from a download or a stray copy instead of the synced shared folder, the
+    /// app says so rather than quietly opening some other guide.
+    /// </summary>
+    public string? RequiredFolder { get; set; }
+
+    /// <summary>
+    /// A further check on <see cref="RequiredFolder"/> once it exists (the desktop checks that
+    /// OneDrive syncs it). Returns why the folder can't be used, or null when it can.
+    /// </summary>
+    public Func<string, string?>? RequiredFolderCheck { get; set; }
+
+    /// <summary>The desktop only opens folders; the phone only opens the shared server.</summary>
+    private bool ServerChosen(GuideSettings settings) => settings.UseServer && _platform.SupportsServer;
 
     /// <param name="folderOverride">Open this folder for this run only (desktop "--data folder").</param>
     public MainViewModel(IPlatformServices platform, ISettingsStore settingsStore, string? folderOverride = null)
@@ -85,7 +126,31 @@ public partial class MainViewModel : ObservableObject
             if (_lockedId is Guid id && _store != null) _ = _store.WriteLockAsync(id, _lockSince);
         });
 
-        bool nothingChosenYet = _folderOverride == null && (_settings.UseServer
+        await OpenChosenGuideAsync();
+    }
+
+    /// <summary>Open the guide this app is meant to open: the fixed folder if there is one, else the one in Settings.</summary>
+    private async Task OpenChosenGuideAsync()
+    {
+        if (_folderOverride == null && RequiredFolder != null && !Directory.Exists(RequiredFolder))
+        {
+            string appFolder = Path.GetDirectoryName(RequiredFolder) ?? RequiredFolder;
+            ShowUnavailable("The guide isn't beside the app",
+                "DMAP Guide looked for a folder called \"guide\" next to DMAP Guide.exe and didn't find one, so the shared guide can't be opened.\n\n" +
+                "This usually means the app was opened from a download or a copy, not from the shared folder that OneDrive syncs to this PC. " +
+                "Open File Explorer, go to OneDrive, open the shared \"DMAP Guide\" folder, and check that \"DMAP Guide.exe\" and the \"guide\" folder " +
+                "sit side by side with green ticks. Then double-click \"DMAP Guide.exe\" there.\n\n" +
+                $"The app was opened from:\n{appFolder}", canOpenSettings: false);
+            return;
+        }
+        if (_folderOverride == null && RequiredFolder != null && RequiredFolderCheck?.Invoke(RequiredFolder) is string problem)
+        {
+            ShowUnavailable("This copy of the guide isn't shared", problem, canOpenSettings: false);
+            return;
+        }
+
+        string? fixedFolder = _folderOverride ?? RequiredFolder;
+        bool nothingChosenYet = fixedFolder == null && (ServerChosen(_settings)
             ? string.IsNullOrWhiteSpace(_settings.ServerAddress)
             : !_platform.SupportsFolders || string.IsNullOrWhiteSpace(_settings.DataFolder));
         if (nothingChosenYet)
@@ -95,7 +160,7 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
-        await OpenAsync(_settings, _folderOverride);
+        await OpenAsync(_settings, fixedFolder);
     }
 
     // ============================================================
@@ -106,7 +171,7 @@ public partial class MainViewModel : ObservableObject
 
     private IGuideStore CreateStore(GuideSettings settings, string? folderOverride)
     {
-        if (settings.UseServer && folderOverride == null)
+        if (ServerChosen(settings) && folderOverride == null)
         {
             var client = TestClient ?? new DmapApiClient(settings.ServerAddress, settings.AccessKey, settings.UserName);
             TestClient = null;
@@ -155,6 +220,9 @@ public partial class MainViewModel : ObservableObject
             readOnly = true;
         }
 
+        // A folder shared with "Can view" opens fine but can't be written to: show the guide without Edit.
+        bool folderReadOnly = !readOnly && store is FolderGuideStore folderStore && !folderStore.CanWrite();
+
         await _gate.WaitAsync();
         try
         {
@@ -172,10 +240,11 @@ public partial class MainViewModel : ObservableObject
             _settings = settings;
             _syncProblem = null;
             _readOnlyAfterLoadError = readOnly;
+            _folderReadOnly = folderReadOnly;
             _selectedNode = null;
             IsEditing = false;
             Data = loaded.Data;
-            OpenAtCurrentCampaign();
+            RollUpContents();
             IsConnected = true;
         }
         finally
@@ -185,10 +254,12 @@ public partial class MainViewModel : ObservableObject
 
         OnPropertyChanged(nameof(Location));
         OnPropertyChanged(nameof(UsesServer));
+        OnPropertyChanged(nameof(IsReadOnly));
         OnPropertyChanged(nameof(CanChangePages));
         Navigating?.Invoke();
         CurrentPage = new PrologueViewModel(this);
-        StatusText = store is ServerGuideStore ? "Connected to the shared guide" : "";
+        StatusText = store is ServerGuideStore ? "Connected to the shared guide" : folderReadOnly ? ReadOnlyStatus : "";
+        CheckAppVersion();
 
         if (loaded.Unreadable.Count > 0)
             await _platform.AlertAsync("DMAP Guide",
@@ -200,13 +271,13 @@ public partial class MainViewModel : ObservableObject
         return true;
     }
 
-    /// <summary>Open the table of contents at the campaign that's on air.</summary>
-    private void OpenAtCurrentCampaign()
+    /// <summary>Start with the seasons open to show their campaigns, and the campaigns rolled up (episodes hidden).</summary>
+    private void RollUpContents()
     {
-        if (Data.CurrentCampaign is Campaign current)
+        foreach (var season in Data.Seasons)
         {
-            current.IsExpanded = true;
-            if (current.Season != null) current.Season.IsExpanded = true;
+            season.IsExpanded = true;
+            foreach (var campaign in season.Campaigns) campaign.IsExpanded = false;
         }
     }
 
@@ -220,14 +291,14 @@ public partial class MainViewModel : ObservableObject
         GuideImages.Store = null;
     }
 
-    private void ShowUnavailable(string title, string message)
+    private void ShowUnavailable(string title, string message, bool canOpenSettings = true)
     {
         IsConnected = false;
         IsEditing = false;
         _selectedNode = null;
         Data = new ShowData();
         Navigating?.Invoke();
-        CurrentPage = new GuideUnavailablePage(this, title, message);
+        CurrentPage = new GuideUnavailablePage(this, title, message, canOpenSettings);
         StatusText = "";
     }
 
@@ -235,7 +306,7 @@ public partial class MainViewModel : ObservableObject
     private async Task ReconnectAsync()
     {
         _settings = await _settingsStore.LoadAsync();
-        await OpenAsync(_settings, _folderOverride);
+        await OpenChosenGuideAsync();
     }
 
     public static string Friendly(Exception ex) => ex switch
@@ -247,10 +318,12 @@ public partial class MainViewModel : ObservableObject
     public string Breadcrumb => CurrentPage switch
     {
         Episode e => $"{e.Campaign?.Season?.DisplayName}  ›  {e.Campaign?.DisplayName}  ›  Episode {e.Number}",
+        ShootNotesPage n => $"{n.Episode.Campaign?.Season?.DisplayName}  ›  {n.Episode.Campaign?.DisplayName}  ›  Episode {n.Episode.Number}  ›  Shoot Notes",
         Campaign c => $"{c.Season?.DisplayName}  ›  {c.DisplayName}",
-        CastRosterPage r => $"{r.Campaign.Season?.DisplayName}  ›  {r.Campaign.DisplayName}  ›  Cast & Characters",
+        CastRosterPage r => $"{r.Campaign.Season?.DisplayName}  ›  {r.Campaign.DisplayName}  ›  Characters",
         Season s => s.DisplayName,
         ScheduleViewModel => "Chronicle of Dates",
+        CastPageViewModel => "Cast",
         SettingsViewModel => "Settings",
         GuideUnavailablePage => "",
         _ => "Prologue"
@@ -264,22 +337,31 @@ public partial class MainViewModel : ObservableObject
     {
         if (target == null || ReferenceEquals(target, CurrentPage)) return;
 
-        if (IsEditing) await SaveAsync();
+        if (IsEditing)
+        {
+            FinishCampaignEdit();
+            await SaveAsync();
+        }
         Navigating?.Invoke();
 
         // Cast details live on the campaign; make sure the page shows the latest.
         if (target is CastRosterPage roster) roster.RefreshAppearances();
         if (target is Episode episode) episode.RefreshCast();
+        if (target is CastPageViewModel cast) cast.RefreshAppearances();
+
+        // The Prologue and Cast pages are edited on their own; leaving them ends editing.
+        if (IsEditing && CurrentPage is not TreeNode) IsEditing = false;
 
         CurrentPage = target;
 
-        // Keep the table of contents in step with the page.
+        // Keep the table of contents in step with the page (Shoot Notes highlight their episode).
         if (target is TreeNode node)
         {
-            for (var p = node.ParentNode; p != null; p = p.ParentNode) p.IsExpanded = true;
-            if (_selectedNode != null && _selectedNode != node) _selectedNode.IsSelected = false;
-            _selectedNode = node;
-            node.IsSelected = true;
+            var shown = node is ShootNotesPage notes ? notes.Episode : node;
+            for (var p = shown.ParentNode; p != null; p = p.ParentNode) p.IsExpanded = true;
+            if (_selectedNode != null && _selectedNode != shown) _selectedNode.IsSelected = false;
+            _selectedNode = shown;
+            shown.IsSelected = true;
         }
         else
         {
@@ -293,12 +375,16 @@ public partial class MainViewModel : ObservableObject
 
         // Still in edit mode: check nobody else is editing the new page.
         if (IsEditing && !await OkToEditAsync()) IsEditing = false;
+        if (IsEditing) StartWatchingCampaignEdit();
         await UpdateLockAsync();
         await ShowPageInfoAsync();
     }
 
     [RelayCommand] private Task ShowPrologueAsync() => NavigateAsync(new PrologueViewModel(this));
     [RelayCommand] private Task ShowScheduleAsync() => NavigateAsync(new ScheduleViewModel(this));
+    [RelayCommand] private Task ShowCastAsync() => NavigateAsync(new CastPageViewModel(this));
+    [RelayCommand] private Task OpenShootNotesAsync(Episode episode) => NavigateAsync(episode.ShootNotesPage);
+    [RelayCommand] private Task CloseShootNotesAsync(ShootNotesPage page) => NavigateAsync(page.Episode);
     [RelayCommand] private Task ShowSettingsAsync() => NavigateAsync(new SettingsViewModel(this, _settings.Clone()));
 
     // ============================================================
@@ -314,17 +400,64 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsEditingChanged(bool value)
     {
-        if (!value) _ = SaveAsync();
+        if (value) StartWatchingCampaignEdit();
+        else
+        {
+            FinishCampaignEdit();
+            _ = SaveAsync();
+        }
         _ = UpdateLockAsync();
     }
+
+    // ------------------------------------------------------------
+    // The campaign's Dungeon Master carries through to its episodes
+    // ------------------------------------------------------------
+    private Campaign? _editedCampaign;
+    private string _dungeonMasterBefore = "";
+
+    private void StartWatchingCampaignEdit()
+    {
+        _editedCampaign = CurrentPage as Campaign;
+        _dungeonMasterBefore = _editedCampaign?.DungeonMaster ?? "";
+    }
+
+    /// <summary>
+    /// Editing a campaign ended. If its Dungeon Master changed, episodes that were following
+    /// the old name (or had none) now follow the campaign; episodes with a different Dungeon
+    /// Master of their own are left alone.
+    /// </summary>
+    private void FinishCampaignEdit()
+    {
+        if (_editedCampaign is not Campaign campaign) return;
+        _editedCampaign = null;
+
+        string before = _dungeonMasterBefore.Trim(), after = campaign.DungeonMaster.Trim();
+        if (string.Equals(before, after, StringComparison.OrdinalIgnoreCase)) return;
+
+        foreach (var episode in campaign.Episodes)
+        {
+            string own = episode.DungeonMaster.Trim();
+            if (own.Length == 0 || string.Equals(own, before, StringComparison.OrdinalIgnoreCase))
+                episode.DungeonMaster = "";
+        }
+    }
+
+    /// <summary>Whether the last save actually wrote anything (Refresh words its status from this).</summary>
+    private bool _lastSaveWrote;
 
     [RelayCommand]
     public async Task SaveAsync()
     {
+        _lastSaveWrote = false;
         if (_store == null || !IsConnected) return;
         if (_readOnlyAfterLoadError)
         {
             StatusText = "Not saved - the guide could not be read at startup";
+            return;
+        }
+        if (_folderReadOnly)
+        {
+            StatusText = ReadOnlyStatus;
             return;
         }
 
@@ -340,6 +473,7 @@ public partial class MainViewModel : ObservableObject
                 tookTheirs |= !keepMine;
                 return keepMine;
             });
+            _lastSaveWrote = written > 0;
             if (written > 0) StatusText = $"Saved {DateTime.Now:t}";
         }
         catch (Exception ex)
@@ -387,11 +521,24 @@ public partial class MainViewModel : ObservableObject
     private Guid? _lockedId;
     private DateTime _lockSince;
 
-    /// <summary>The saved page the current page edits (the cast page belongs to its campaign).</summary>
+    /// <summary>
+    /// The saved page the current page edits (the Characters page belongs to its campaign,
+    /// Shoot Notes to their episode). Null for the Prologue and Cast pages, which edit the
+    /// show-wide record.
+    /// </summary>
     private TreeNode? EditTarget => CurrentPage switch
     {
         CastRosterPage r => r.Campaign,
+        ShootNotesPage n => n.Episode,
         TreeNode n => n,
+        _ => null
+    };
+
+    /// <summary>What "someone is editing" warnings are keyed on for the current page, and what to call it.</summary>
+    private (Guid Id, string Name)? LockTarget => CurrentPage switch
+    {
+        CastPageViewModel => (GuideRecords.GuideLockId, "the Cast page"),
+        _ when EditTarget is TreeNode n => (n.Id, $"\"{n.DisplayName}\""),
         _ => null
     };
 
@@ -399,7 +546,7 @@ public partial class MainViewModel : ObservableObject
     private async Task UpdateLockAsync()
     {
         if (_store == null) return;
-        Guid? wanted = IsEditing ? EditTarget?.Id : null;
+        Guid? wanted = IsEditing ? LockTarget?.Id : null;
         if (wanted == _lockedId) return;
 
         var old = _lockedId;
@@ -411,12 +558,12 @@ public partial class MainViewModel : ObservableObject
 
     private async Task<bool> OkToEditAsync()
     {
-        if (_store == null || EditTarget is not TreeNode node ||
-            await _store.ReadLockAsync(node.Id) is not EditLock other || !other.IsSomeoneElse(UserName))
+        if (_store == null || LockTarget is not (Guid id, string name) ||
+            await _store.ReadLockAsync(id) is not EditLock other || !other.IsSomeoneElse(UserName))
             return true;
 
         return await _platform.AskAsync("Someone else is editing",
-            $"{other.User} is editing \"{node.DisplayName}\" right now (since {other.Since.ToLocalTime():t}).\n\n" +
+            $"{other.User} is editing {name} right now (since {other.Since.ToLocalTime():t}).\n\n" +
             "If you both change it, whoever saves second will be asked whose version to keep.\n\nEdit it anyway?",
             "Edit anyway", "Cancel");
     }
@@ -430,24 +577,50 @@ public partial class MainViewModel : ObservableObject
             StatusText = _syncProblem;
             return;
         }
-        if (_store == null || EditTarget is not TreeNode node) return;
+        if (_store == null || LockTarget is not (Guid id, _)) return;
 
-        if (await _store.ReadLockAsync(node.Id) is EditLock other && other.IsSomeoneElse(UserName))
+        if (await _store.ReadLockAsync(id) is EditLock other && other.IsSomeoneElse(UserName))
             StatusText = $"✎ {other.User} is editing this page";
-        else if (node.LastEdited is DateTime when && node.LastEditedBy.Length > 0)
+        else if (EditTarget is { LastEdited: DateTime when, LastEditedBy.Length: > 0 } node)
             StatusText = $"Last changed by {node.LastEditedBy}, {when.ToLocalTime():g}";
         else
-            StatusText = "";
+            StatusText = _folderReadOnly ? ReadOnlyStatus : "";
     }
+
+    private const string ReadOnlyStatus = "Read only: you can read this guide but not change it";
 
     /// <summary>Why other people's changes can't be fetched right now (null when all is well).</summary>
     private string? _syncProblem;
 
-    /// <summary>Pick up pages other people have saved.</summary>
-    public async Task SyncNowAsync()
+    /// <summary>
+    /// The Refresh button: save what's been changed here, then pick up everyone else's changes,
+    /// without closing and reopening the app. The status line says what happened.
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshAsync()
     {
-        if (_store == null || !IsConnected || _readOnlyAfterLoadError) return;
-        if (!await _gate.WaitAsync(0)) return;
+        if (_store == null || !IsConnected) return;
+
+        await SaveAsync();
+        bool saved = _lastSaveWrote;
+        bool pickedUp = await SyncNowAsync();
+        if (_syncProblem != null || !IsConnected) return;
+
+        string when = DateTime.Now.ToString("t");
+        StatusText = (saved, pickedUp) switch
+        {
+            (true, true) => $"Saved and picked up changes {when}",
+            (true, false) => $"Saved. Nothing new from anyone else {when}",
+            (false, true) => $"Picked up changes {when}",
+            _ => $"Up to date {when}"
+        };
+    }
+
+    /// <summary>Pick up pages other people have saved. True when something changed.</summary>
+    public async Task<bool> SyncNowAsync()
+    {
+        if (_store == null || !IsConnected || _readOnlyAfterLoadError) return false;
+        if (!await _gate.WaitAsync(0)) return false;
 
         SyncResult result;
         try
@@ -462,7 +635,7 @@ public partial class MainViewModel : ObservableObject
                 ? "⚠ Not up to date: the access key isn't accepted any more. Enter the current key in Settings."
                 : $"⚠ Not up to date: {Friendly(ex)}";
             StatusText = _syncProblem;
-            return;
+            return false;
         }
         finally
         {
@@ -478,12 +651,53 @@ public partial class MainViewModel : ObservableObject
             _selectedNode = null;
             await ShowPrologueAsync();
             StatusText = $"\"{gone.DisplayName}\" was deleted by someone else";
-            return;
+            return true;
         }
 
         if (result.Changed) RefreshPage();
         await ShowPageInfoAsync();
+        CheckAppVersion();
+        return result.Changed;
     }
+
+    // ============================================================
+    // VERSIONS: is everyone on the same DMAP Guide?
+    // ============================================================
+    /// <summary>A note in the shared folder: the newest DMAP Guide that has opened this guide.</summary>
+    private const string VersionFile = "app-version.txt";
+
+    /// <summary>
+    /// Record this app's version in the shared folder if it's the newest seen, or warn if a
+    /// newer one has been used: whoever sees the warning is still on an old DMAP Guide.exe.
+    /// </summary>
+    private void CheckAppVersion()
+    {
+        if (_store is not FolderGuideStore folder) return;
+        try
+        {
+            string path = Path.Combine(folder.Folder, VersionFile);
+            Version? mine = ParseVersion(AppVersion);
+            Version? newest = File.Exists(path) ? ParseVersion(File.ReadAllText(path)) : null;
+            if (mine == null) return;
+
+            if (newest != null && newest > mine)
+            {
+                VersionWarning = $"⚠ You're on DMAP Guide {mine}, but {newest} has been used with this guide. " +
+                                 "Close the app and open the latest DMAP Guide.exe from the shared folder.";
+                return;
+            }
+            VersionWarning = "";
+            if ((newest == null || mine > newest) && !IsReadOnly)
+                File.WriteAllText(path, mine.ToString());
+        }
+        catch (Exception)
+        {
+            // Not being able to read or write the note is no reason to interrupt anyone.
+        }
+    }
+
+    private static Version? ParseVersion(string text) =>
+        Version.TryParse(text.Trim(), out var v) ? v : null;
 
     /// <summary>Raised when pages built from the whole guide need redrawing (the phone's contents list listens).</summary>
     public event Action? GuideChanged;
@@ -498,6 +712,9 @@ public partial class MainViewModel : ObservableObject
                 break;
             case ScheduleViewModel schedule:
                 schedule.Rebuild();
+                break;
+            case CastPageViewModel cast:
+                cast.RefreshAppearances();
                 break;
             case CastRosterPage roster:
                 roster.RefreshAppearances();
@@ -536,6 +753,7 @@ public partial class MainViewModel : ObservableObject
             Campaign c => c.Season,
             CastRosterPage r => r.Campaign.Season,
             Episode e => e.Campaign?.Season,
+            ShootNotesPage n => n.Episode.Campaign?.Season,
             _ => null
         } ?? Data.Seasons.LastOrDefault();
 
@@ -566,6 +784,7 @@ public partial class MainViewModel : ObservableObject
             Campaign c => c,
             CastRosterPage r => r.Campaign,
             Episode e => e.Campaign,
+            ShootNotesPage n => n.Episode.Campaign,
             Season s => s.Campaigns.LastOrDefault(),
             _ => null
         } ?? Data.AllCampaigns.LastOrDefault();
@@ -577,12 +796,14 @@ public partial class MainViewModel : ObservableObject
         }
 
         // Episodes are numbered <campaign><nn>, e.g. 301, 302 for campaign 3.
+        // The Dungeon Master comes from the campaign unless the previous episode had its own.
         var last = campaign.Episodes.OrderBy(e => e.Number).LastOrDefault();
         var episode = new Episode
         {
             Number = last != null ? last.Number + 1 : campaign.Number * 100 + 1,
             Campaign = campaign,
-            DungeonMaster = last?.DungeonMaster is { Length: > 0 } dm ? dm : campaign.DungeonMaster,
+            DungeonMaster = last?.DungeonMaster is { Length: > 0 } dm &&
+                            !string.Equals(dm.Trim(), campaign.DungeonMaster.Trim(), StringComparison.OrdinalIgnoreCase) ? dm : "",
             FilmingLocation = last?.FilmingLocation ?? ""
         };
 
@@ -606,11 +827,14 @@ public partial class MainViewModel : ObservableObject
     private async Task DeleteCurrentAsync()
     {
         if (!CanChangePages) return;
-        if (CurrentPage is not TreeNode node || node is CastRosterPage)
+        if (CurrentPage is not TreeNode node || node is CastRosterPage or ShootNotesPage)
         {
-            await _platform.AlertAsync("DMAP Guide", CurrentPage is CastRosterPage
-                ? "The Cast & Characters page belongs to its campaign and can't be deleted. To remove a character, press Edit Page and use the ✕ on their card."
-                : "Open the season, campaign or episode you want to delete first.");
+            await _platform.AlertAsync("DMAP Guide", CurrentPage switch
+            {
+                CastRosterPage => "The Characters page belongs to its campaign and can't be deleted. To remove a character, press Edit Page and use the ✕ on their card.",
+                ShootNotesPage => "Shoot Notes belong to their episode and can't be deleted on their own. Open the episode to delete it.",
+                _ => "Open the season, campaign or episode you want to delete first."
+            });
             return;
         }
 
@@ -653,8 +877,32 @@ public partial class MainViewModel : ObservableObject
         campaign.RosterPage.RefreshAppearances();
     }
 
+    /// <summary>Open a campaign's Characters page: given the campaign, or one of its characters.</summary>
     [RelayCommand]
-    private Task OpenRosterAsync(Campaign campaign) => NavigateAsync(campaign.RosterPage);
+    private Task OpenRosterAsync(object? target)
+    {
+        var campaign = target switch
+        {
+            Campaign c => c,
+            CastMember m => Data.AllCampaigns.FirstOrDefault(c => c.Characters.Contains(m)),
+            _ => null
+        };
+        return campaign == null ? Task.CompletedTask : NavigateAsync(campaign.RosterPage);
+    }
+
+    /// <summary>Add a person to the Cast page: a "DungeonMaster", a "Guest", or (anything else) a cast member.</summary>
+    [RelayCommand]
+    private void AddCastMember(string? kind)
+    {
+        if (!CanEdit || CurrentPage is not CastPageViewModel) return;
+        var list = kind switch
+        {
+            "DungeonMaster" => Data.DungeonMasters,
+            "Guest" => Data.Guests,
+            _ => Data.Cast
+        };
+        list.Add(new CastMember());
+    }
 
     [RelayCommand] private void AddGuest(Episode ep) => ep.GuestCast.Add(new CastMember());
     [RelayCommand] private void AddKeyMoment(Episode ep) => ep.KeyMoments.Add(new KeyMoment());
@@ -665,14 +913,12 @@ public partial class MainViewModel : ObservableObject
     {
         switch (CurrentPage)
         {
-            // On an episode: take them out of this episode (they stay on the campaign's list).
+            // On an episode: take them out of this episode (they stay on the campaign's list or the Cast page).
             case Episode ep:
-                if (ep.CastIds.Contains(member.Id))
-                {
-                    ep.SetInCast(member, false);
-                    ep.RefreshCast(); // untick their box too
-                }
+                if (ep.CastIds.Contains(member.Id)) ep.SetInCast(member, false);
+                else if (ep.GuestIds.Contains(member.Id)) ep.SetGuest(member, false);
                 else ep.GuestCast.Remove(member);
+                ep.RefreshCast(); // untick their box too
                 break;
 
             // On the cast page: remove the character from the campaign and all its episodes.
@@ -687,6 +933,18 @@ public partial class MainViewModel : ObservableObject
 
                 foreach (var e in campaign.Episodes) e.CastIds.Remove(member.Id);
                 campaign.Characters.Remove(member);
+                break;
+
+            // On the Cast page: take the person off the Cast page (their characters stay on their campaigns).
+            case CastPageViewModel cast:
+                string who = string.IsNullOrWhiteSpace(member.PlayerName) ? "this person" : member.PlayerName;
+                int guestIn = Data.AllEpisodes.Count(e => e.GuestIds.Contains(member.Id));
+                string also = guestIn > 0 ? $"\n\nThey'll also be removed from the {guestIn} episode(s) they guest in." : "";
+                if (!await _platform.AskAsync("Remove from the cast", $"Remove {who} from the Cast page?{also}", "Remove", "Cancel"))
+                    return;
+                foreach (var e in Data.AllEpisodes) e.GuestIds.Remove(member.Id);
+                if (!Data.DungeonMasters.Remove(member) && !Data.Cast.Remove(member)) Data.Guests.Remove(member);
+                cast.RefreshAppearances();
                 break;
         }
     }
@@ -703,6 +961,31 @@ public partial class MainViewModel : ObservableObject
         if (CurrentPage is Episode ep) ep.AirDates.Remove(date);
     }
 
+    /// <summary>Open a web address (an air date's link) in the browser; "youtube.com/…" is fine without https://.</summary>
+    [RelayCommand]
+    private async Task OpenLinkAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return;
+        string address = url.Trim();
+        if (!address.Contains("://")) address = "https://" + address;
+
+        if (!Uri.TryCreate(address, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https") ||
+            !uri.Host.Contains('.'))
+        {
+            await _platform.AlertAsync("DMAP Guide", $"That doesn't look like a web address:\n{url}\n\nIt should look like https://www.youtube.com/watch?v=…");
+            return;
+        }
+
+        try
+        {
+            _platform.OpenLink(uri.ToString());
+        }
+        catch (Exception ex)
+        {
+            await _platform.AlertAsync("DMAP Guide", $"The link couldn't be opened:\n{Friendly(ex)}");
+        }
+    }
+
     // ============================================================
     // PICTURES
     // ============================================================
@@ -717,6 +1000,13 @@ public partial class MainViewModel : ObservableObject
     {
         if (await PickImageAsync() is string path) campaign.CoverImage = path;
     }
+
+    [RelayCommand]
+    private void RemoveCover(Campaign campaign)
+    {
+        if (IsEditing) campaign.CoverImage = "";
+    }
+
 
     private async Task<string?> PickImageAsync()
     {
@@ -747,6 +1037,7 @@ public partial class MainViewModel : ObservableObject
     {
         next.UserName = next.UserName.Trim();
         if (next.UserName.Length == 0) return "Enter your name. It's shown on the pages you change.";
+        next.UseServer = ServerChosen(next);
 
         if (next.UseServer)
         {
@@ -797,7 +1088,8 @@ public partial class MainViewModel : ObservableObject
             }
         }
 
-        if (!await OpenAsync(next)) return null; // the page saying why is already showing
+        // Opened from a fixed folder (beside the app): only the name can change.
+        if (!await OpenAsync(next, _folderOverride)) return null; // the page saying why is already showing
         await _settingsStore.SaveAsync(next);
         _settings = next;
         OnPropertyChanged(nameof(UserName));
@@ -878,10 +1170,14 @@ public partial class GuideUnavailablePage
     public string Title { get; }
     public string Message { get; }
 
-    public GuideUnavailablePage(MainViewModel main, string title, string message)
+    /// <summary>False when Settings can't help (the shared app was opened away from its guide folder).</summary>
+    public bool CanOpenSettings { get; }
+
+    public GuideUnavailablePage(MainViewModel main, string title, string message, bool canOpenSettings = true)
     {
         Main = main;
         Title = title;
         Message = message;
+        CanOpenSettings = canOpenSettings;
     }
 }

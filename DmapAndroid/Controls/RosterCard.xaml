@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- A character on the Cast & Characters page: the full record (the desktop's roster card). -->
+<!-- A character on the Characters page: the full record (the desktop's roster card). -->
 <ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"

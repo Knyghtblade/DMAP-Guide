@@ -26,12 +26,25 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // "--data <folder>" opens a different guide folder for this run only.
+        // "--data <folder>" opens a different guide folder for this run only; otherwise the
+        // guide beside the app (the shared folder) wins; otherwise the folder in Settings.
         var args = Environment.GetCommandLineArgs();
         int i = Array.IndexOf(args, "--data");
-        string? folder = i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+        string? dataArg = i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+        string? folder = dataArg ?? (AppSettings.IsPublishedAsOneFile ? null : AppSettings.GuideFolderBesideApp);
 
         _vm = new MainViewModel(new WpfPlatform(), new AppSettings(), folder) { CommitPendingEdits = CommitFocusedTextBox };
+        Title = $"DMAP Guide {_vm.AppVersion}";
+
+        // The shared app only ever opens the guide beside it, and only when OneDrive syncs that
+        // folder. If the guide is missing (the .exe was opened from a download or a stray copy)
+        // or the folder isn't synced (the whole folder was downloaded), it says so instead of
+        // quietly opening a guide nobody else can see.
+        if (dataArg == null && AppSettings.IsPublishedAsOneFile)
+        {
+            _vm.RequiredFolder = AppSettings.ExpectedGuideFolderBesideApp;
+            _vm.RequiredFolderCheck = AppSettings.NotSyncedProblem;
+        }
         DataContext = _vm;
 
         _vm.Navigating += SnapshotPage;
@@ -111,6 +124,24 @@ public partial class MainWindow : Window
         while (d != null && d is not T)
             d = d is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(d) : LogicalTreeHelper.GetParent(d);
         return d as T;
+    }
+
+    // ============================================================
+    // FITTING THE BOOK TO THE WINDOW
+    // ============================================================
+    // The book is laid out at 1360 x 840 and scaled to the window's height, so everything
+    // grows together on a big screen. Extra width (wide monitors) opens the book wider, up
+    // to a limit that keeps lines of text readable, instead of leaving a huge empty desk.
+    private const double DesignWidth = 1360, DesignHeight = 840, WidestBook = 1800;
+
+    private void BookHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        double w = BookHost.ActualWidth, h = BookHost.ActualHeight;
+        if (w < 1 || h < 1) return;
+
+        double scale = Math.Min(h / DesignHeight, w / DesignWidth);
+        BookScale.ScaleX = BookScale.ScaleY = scale;
+        Book.Width = Math.Min(w / scale, WidestBook);
     }
 
     // Text boxes on the page swallow the mouse wheel; scroll the page instead.

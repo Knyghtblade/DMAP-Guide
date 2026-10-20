@@ -4,7 +4,7 @@
         xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
         Title="DMAP Guide"
         Width="1440" Height="920"
-        MinWidth="1100" MinHeight="700"
+        MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/Assets/dmap.ico"
         Background="{StaticResource DeskBrush}">
@@ -12,6 +12,7 @@
     <Window.InputBindings>
         <KeyBinding Key="S" Modifiers="Ctrl" Command="{Binding SaveCommand}"/>
         <KeyBinding Key="E" Modifiers="Ctrl" Command="{Binding ToggleEditCommand}"/>
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/>
     </Window.InputBindings>
 
     <Grid x:Name="Root">
@@ -40,9 +41,15 @@
         </Ellipse>
 
         <!-- ============================================================
-             THE BOOK
+             THE BOOK: laid out at one size and scaled to the window's height
+             (so text and pictures grow on a big screen), opening a little wider
+             on wide screens rather than leaving the desk empty. See BookHost_SizeChanged.
         ============================================================ -->
-        <Grid x:Name="Book" Margin="40,28,40,52">
+        <Grid x:Name="BookHost" Margin="40,28,40,52" SizeChanged="BookHost_SizeChanged">
+        <Grid x:Name="Book" Width="1360" Height="840" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Grid.LayoutTransform>
+                <ScaleTransform x:Name="BookScale"/>
+            </Grid.LayoutTransform>
 
             <!-- Dragon-hide binding -->
             <Border CornerRadius="16" Background="{StaticResource DragonHideBrush}" BorderBrush="#1A0408" BorderThickness="2">
@@ -90,25 +97,71 @@
                                         <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.35"/>
                                     </Image.Effect>
                                 </Image>
-                                <TextBlock Text="The Producer's Guide" FontFamily="{StaticResource TitleFont}" FontSize="17"
+                                <TextBlock Text="The Production Guide" FontFamily="{StaticResource TitleFont}" FontSize="17"
                                            FontWeight="Bold" Foreground="{StaticResource RubricBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                             </StackPanel>
 
                             <TextBlock Style="{StaticResource Flourish}"/>
 
-                            <Button Style="{StaticResource LinkButton}" Command="{Binding ShowPrologueCommand}">
+                            <Button Command="{Binding ShowPrologueCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavLink}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnPrologue}" Value="True">
+                                                <Setter Property="Background" Value="#55C9A24A"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="❧" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
                                     <TextBlock Text="Prologue" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource LinkButton}" Command="{Binding ShowScheduleCommand}">
+                            <Button Command="{Binding ShowScheduleCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavLink}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnSchedule}" Value="True">
+                                                <Setter Property="Background" Value="#55C9A24A"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="☾" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
                                     <TextBlock Text="Chronicle of Dates" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
                                 </StackPanel>
                             </Button>
-                            <Button Style="{StaticResource LinkButton}" Command="{Binding ShowSettingsCommand}">
+                            <Button Command="{Binding ShowCastCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavLink}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnCast}" Value="True">
+                                                <Setter Property="Background" Value="#55C9A24A"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="♞" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
+                                    <TextBlock Text="Cast" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ShowSettingsCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavLink}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnSettings}" Value="True">
+                                                <Setter Property="Background" Value="#55C9A24A"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="⚙" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
                                     <TextBlock Text="Settings" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"/>
@@ -212,8 +265,16 @@
                         <!-- Header: where am I + edit button -->
                         <DockPanel Margin="0,0,0,8">
                             <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <TextBlock Text="{Binding VersionWarning}" FontFamily="{StaticResource BodyFont}" FontStyle="Italic" FontSize="14"
+                                           Foreground="{StaticResource RubricBrush}" VerticalAlignment="Center" Margin="0,0,12,0" MaxWidth="420" TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding VersionWarning}"
+                                           Visibility="{Binding VersionWarning, Converter={StaticResource EmptyToCollapsed}}"/>
                                 <TextBlock Text="{Binding StatusText}" FontFamily="{StaticResource BodyFont}" FontStyle="Italic" FontSize="14"
                                            Foreground="{StaticResource InkFadedBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <Button Style="{StaticResource TomeButton}" Content="⟳  Refresh" Margin="0,0,8,0"
+                                        Command="{Binding RefreshCommand}"
+                                        Visibility="{Binding IsConnected, Converter={StaticResource BoolToVis}}"
+                                        ToolTip="Save your changes and pick up everyone else's (F5)"/>
                                 <Button Command="{Binding ToggleEditCommand}"
                                         Visibility="{Binding CanEdit, Converter={StaticResource BoolToVis}}"
                                         ToolTip="Ctrl+E">
@@ -342,7 +403,7 @@
                             </Border.Effect>
                             <Image Source="{StaticResource DmapLogo}" Width="460" RenderOptions.BitmapScalingMode="HighQuality"/>
                         </Border>
-                        <TextBlock Text="The Producer's Guide" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="34"
+                        <TextBlock Text="The Production Guide" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="34"
                                    Foreground="{StaticResource GoldLightBrush}" HorizontalAlignment="Center" Margin="0,26,0,0">
                             <TextBlock.Effect>
                                 <DropShadowEffect Color="#000000" BlurRadius="8" ShadowDepth="2" Opacity="0.9"/>
@@ -368,6 +429,7 @@
                     </Ellipse.Fill>
                 </Ellipse>
             </Grid>
+        </Grid>
         </Grid>
 
         <!-- Sparkles burst from the spine as the cover opens -->

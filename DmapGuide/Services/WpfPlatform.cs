@@ -12,9 +12,13 @@ namespace DmapGuide.Services;
 public class WpfPlatform : IPlatformServices
 {
     public bool SupportsFolders => true;
+    public bool SupportsServer => false;
 
     public string CacheFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DMAP Guide", "cache");
+
+    /// <summary>From &lt;Version&gt; in DmapGuide.csproj, which "Publish Shared App" bumps on every build it ships.</summary>
+    public string AppVersion { get; } = (typeof(WpfPlatform).Assembly.GetName().Version ?? new Version(0, 0, 0)).ToString(3);
 
     public Task AlertAsync(string title, string message)
     {
@@ -42,6 +46,9 @@ public class WpfPlatform : IPlatformServices
     }
 
     public void BeginInvoke(Action action) => Application.Current?.Dispatcher.BeginInvoke(action);
+
+    public void OpenLink(string url) =>
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
 
     public void StartTimer(TimeSpan interval, Action tick)
     {

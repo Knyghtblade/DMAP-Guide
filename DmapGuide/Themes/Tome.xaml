@@ -84,6 +84,8 @@
     <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
     <conv:InverseBoolConverter x:Key="Not"/>
     <conv:EmptyToCollapsedConverter x:Key="EmptyToCollapsed"/>
+    <conv:NotEmptyConverter x:Key="NotEmpty"/>
+    <conv:AllTrueToVisibilityConverter x:Key="AllTrueToVis"/>
     <conv:DateTextConverter x:Key="DateText"/>
     <conv:ImageConverter x:Key="Image"/>
     <conv:StatusToBrushConverter x:Key="StatusBrush"/>
@@ -248,6 +250,52 @@
                 Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
     </Style>
 
+    <!-- A pick-or-type list (e.g. the Dungeon Master, from the Cast page); shown only in edit mode -->
+    <Style x:Key="TomeCombo" TargetType="ComboBox">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="Background" Value="{StaticResource EditFieldBrush}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource InkFadedBrush}"/>
+        <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+    </Style>
+
+    <!-- A field that drops down a tick-list (the air date's platforms); shown only in edit mode -->
+    <Style x:Key="TomePicker" TargetType="ToggleButton">
+        <Setter Property="FontFamily" Value="{StaticResource BodyFont}"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        <Setter Property="Visibility"
+                Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Bd" Background="{StaticResource EditFieldBrush}" BorderBrush="{StaticResource InkFadedBrush}"
+                            BorderThickness="0,0,0,1" CornerRadius="3,3,0,0" Padding="4,2">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Right" Text="▾" Foreground="{StaticResource InkSoftBrush}" Margin="6,0,2,0"
+                                       VerticalAlignment="Center" FontFamily="{StaticResource SymbolFont}"/>
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </DockPanel>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource RubricBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#70FFFBEF"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource RubricBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============================================================
          BUTTONS
     ============================================================ -->
@@ -305,6 +353,26 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="6,4">
+                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="#33C9A24A"/>
+                            <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- The fixed pages' links in the menu (Prologue, Chronicle, Cast, Settings); Background marks the open page -->
+    <Style x:Key="NavLink" TargetType="Button" BasedOn="{StaticResource LinkButton}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="6,4">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                     </Border>
                     <ControlTemplate.Triggers>

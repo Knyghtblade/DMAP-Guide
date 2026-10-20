@@ -65,7 +65,7 @@ public sealed class TomePage : ContentPage
                 Children =
                 {
                     new Image { Source = TomeImages.Logo(), WidthRequest = 270, HeightRequest = 110, Aspect = Aspect.AspectFit },
-                    new Label { Text = "The Producer's Guide", FontFamily = "DmapDisplay", FontSize = 25, TextColor = Tome.GoldLight, HorizontalTextAlignment = TextAlignment.Center },
+                    new Label { Text = "The Production Guide", FontFamily = "DmapDisplay", FontSize = 25, TextColor = Tome.GoldLight, HorizontalTextAlignment = TextAlignment.Center },
                     new Label { Text = "tap to open the tome", FontFamily = "DmapBodyItalic", FontSize = 14, TextColor = Tome.Gold, Opacity = 0.7, HorizontalTextAlignment = TextAlignment.Center }
                 }
             }
@@ -145,7 +145,7 @@ public sealed class TomePage : ContentPage
             Children =
             {
                 new Image { Source = TomeImages.Logo(), WidthRequest = 110, HeightRequest = 40, Aspect = Aspect.AspectFit, HorizontalOptions = LayoutOptions.Center },
-                new Label { Text = "The Producer's Guide", FontFamily = "DmapDisplay", FontSize = 12, TextColor = Tome.Rubric, HorizontalTextAlignment = TextAlignment.Center },
+                new Label { Text = "The Production Guide", FontFamily = "DmapDisplay", FontSize = 12, TextColor = Tome.Rubric, HorizontalTextAlignment = TextAlignment.Center },
                 new Label { Style = AppStyle("Flourish") },
                 SideLink("❧", "Prologue", () => _vm.ShowPrologueCommand.Execute(null)),
                 SideLink("☾", "Chronicle of Dates", () => _vm.ShowScheduleCommand.Execute(null)),
@@ -177,15 +177,19 @@ public sealed class TomePage : ContentPage
         status.SetBinding(Label.TextProperty, nameof(MainViewModel.StatusText));
         _editButton.Command = _vm.ToggleEditCommand;
         _editButton.SetBinding(IsVisibleProperty, nameof(MainViewModel.CanEdit));
+        // Save my changes and pick up everyone else's, without leaving the app.
+        var refreshButton = new TomeButton { Text = "⟳", Margin = new Thickness(0, 0, 6, 0), Command = _vm.RefreshCommand };
+        refreshButton.SetBinding(IsVisibleProperty, nameof(MainViewModel.IsConnected));
 
         var pageHeader = new Grid
         {
-            ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto) },
+            ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) },
             Margin = new Thickness(0, 0, 0, 4)
         };
         pageHeader.Add(breadcrumb, 0, 0);
         pageHeader.Add(status, 1, 0);
-        pageHeader.Add(_editButton, 2, 0);
+        pageHeader.Add(refreshButton, 2, 0);
+        pageHeader.Add(_editButton, 3, 0);
 
         _pageScroller.Content = _pageHost;
         var rightContent = new Grid
@@ -193,7 +197,11 @@ public sealed class TomePage : ContentPage
             Padding = new Thickness(14, 8, 10, 4),
             RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Star), new(GridLength.Auto) }
         };
-        rightContent.Add(pageHeader, 0, 0);
+        var versionWarning = new Label { FontFamily = "DmapBodyItalic", FontSize = 11, TextColor = Tome.Rubric, Margin = new Thickness(0, 0, 0, 2) };
+        versionWarning.SetBinding(Label.TextProperty, nameof(MainViewModel.VersionWarning));
+        versionWarning.SetBinding(IsVisibleProperty, new Binding(nameof(MainViewModel.VersionWarning), converter: new NotEmptyConverter()));
+        var headerBlock = new VerticalStackLayout { Children = { pageHeader, versionWarning } };
+        rightContent.Add(headerBlock, 0, 0);
         rightContent.Add(new BoxView { HeightRequest = 1, Color = Tome.Gold, Opacity = 0.5, Margin = new Thickness(0, 0, 0, 8) }, 0, 1);
         rightContent.Add(_pageScroller, 0, 2);
         rightContent.Add(new Label { Text = "— ❦ —", TextColor = Tome.Gold, Opacity = 0.8, HorizontalOptions = LayoutOptions.Center, Margin = new Thickness(0, 4, 0, 0) }, 0, 3);

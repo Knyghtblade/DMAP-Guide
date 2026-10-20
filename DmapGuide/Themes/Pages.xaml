@@ -2,7 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
                     xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
-                    xmlns:svc="clr-namespace:DmapGuide.Services">
+                    xmlns:svc="clr-namespace:DmapGuide.Services"
+                    xmlns:ctl="clr-namespace:DmapGuide.Controls">
 
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="Tome.xaml"/>
@@ -43,20 +44,17 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Portrait in a gilded ring -->
+                <!-- Portrait in a gilded ring (drag it into place in edit mode) -->
                 <StackPanel VerticalAlignment="Top">
                     <Grid Width="92" Height="92">
                         <Ellipse Fill="#33876A45"/>
                         <TextBlock Text="✦" FontSize="30" Foreground="{StaticResource InkFadedBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    FontFamily="{StaticResource SymbolFont}"/>
-                        <Ellipse>
-                            <Ellipse.Fill>
-                                <ImageBrush Stretch="UniformToFill"
-                                            ImageSource="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=300}"/>
-                            </Ellipse.Fill>
-                        </Ellipse>
-                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="2.5"/>
+                        <ctl:PortraitView Source="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=300}"
+                                          OffsetX="{Binding ImageOffsetX}" OffsetY="{Binding ImageOffsetY}"
+                                          CanDrag="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="2.5" IsHitTestVisible="False"/>
                         <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="4" Opacity="0.6"/>
                     </Grid>
                     <Button Style="{StaticResource AddButton}" Margin="0,6,0,0" HorizontalAlignment="Center"
@@ -76,8 +74,12 @@
                     </DockPanel>
                     <TextBox Style="{StaticResource InkBox}" Text="{Binding CharacterSummary}" Tag="Race · Class · Level"
                              FontStyle="Italic" FontSize="15" Foreground="{StaticResource InkSoftBrush}" Margin="0,2,0,0"/>
-                    <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding CharacterDescription}" Tag="Character bio"
-                             FontSize="15" Margin="0,4,0,0"/>
+                    <Border CornerRadius="9" Padding="8,1" Margin="3,6,0,0" HorizontalAlignment="Left"
+                            Background="{StaticResource ArcaneBrush}"
+                            Visibility="{Binding IsGuest, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="GUEST CHARACTER" Foreground="#F7ECD2" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="10" FontWeight="Bold"/>
+                    </Border>
                 </StackPanel>
 
                 <Button Grid.Column="2" Style="{StaticResource RemoveButton}"
@@ -88,7 +90,48 @@
     </DataTemplate>
 
     <!-- ============================================================
-         ROSTER CARD (Cast & Characters page): the full record for a character
+         GUEST CARD (episode page): a guest star from the Cast page
+    ============================================================ -->
+    <DataTemplate x:Key="GuestCard" DataType="{x:Type m:CastMember}">
+        <Border Style="{StaticResource Card}" Width="350">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="96"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Width="92" Height="92" VerticalAlignment="Top">
+                    <Ellipse Fill="#33876A45"/>
+                    <TextBlock Text="✦" FontSize="30" Foreground="{StaticResource InkFadedBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontFamily="{StaticResource SymbolFont}"/>
+                    <ctl:PortraitView Source="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=300}"
+                                      OffsetX="{Binding ImageOffsetX, Mode=OneWay}" OffsetY="{Binding ImageOffsetY, Mode=OneWay}"/>
+                    <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="2.5" IsHitTestVisible="False"/>
+                    <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="4" Opacity="0.6" IsHitTestVisible="False"/>
+                </Grid>
+
+                <StackPanel Grid.Column="1" Margin="10,0,4,0">
+                    <TextBlock Text="{Binding PlayerName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="17"
+                               Foreground="{StaticResource RubricBrush}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding CharacterSummary}" Style="{StaticResource Body}" FontStyle="Italic" FontSize="15"
+                               Foreground="{StaticResource InkSoftBrush}" Margin="0,2,0,0"
+                               Visibility="{Binding CharacterSummary, Converter={StaticResource EmptyToCollapsed}}"/>
+                    <TextBlock Text="Details are kept on the Cast page" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="0,6,0,0"
+                               Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Style="{StaticResource RemoveButton}" ToolTip="Take them out of this episode"
+                        Command="{Binding DataContext.RemoveCastCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <!-- ============================================================
+         ROSTER CARD (Characters page): the full record for a character
     ============================================================ -->
     <DataTemplate x:Key="RosterCard" DataType="{x:Type m:CastMember}">
         <Border Style="{StaticResource Card}" Margin="0,0,0,14" Padding="16">
@@ -105,19 +148,29 @@
                         <TextBlock Text="✦" FontSize="40" Foreground="{StaticResource InkFadedBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    FontFamily="{StaticResource SymbolFont}"/>
-                        <Ellipse>
-                            <Ellipse.Fill>
-                                <ImageBrush Stretch="UniformToFill"
-                                            ImageSource="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=400}"/>
-                            </Ellipse.Fill>
-                        </Ellipse>
-                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="3"/>
-                        <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="5" Opacity="0.6"/>
+                        <ctl:PortraitView Source="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=400}"
+                                          OffsetX="{Binding ImageOffsetX}" OffsetY="{Binding ImageOffsetY}"
+                                          CanDrag="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="3" IsHitTestVisible="False"/>
+                        <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="5" Opacity="0.6" IsHitTestVisible="False"/>
                     </Grid>
                     <Button Style="{StaticResource AddButton}" Margin="22,8,0,0" HorizontalAlignment="Left"
                             Content="Picture…"
                             Command="{Binding DataContext.ChoosePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"/>
+                    <TextBlock Text="Drag to reposition" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="2,6,0,0" Width="130" TextWrapping="Wrap" TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="{Binding ImagePath, Converter={StaticResource EmptyToCollapsed}}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Margin="4,0,8,0">
@@ -132,6 +185,21 @@
                         <TextBox Style="{StaticResource InkBox}" Text="{Binding PlayerName}" Tag="Cast member's real name"
                                  FontWeight="SemiBold"/>
                     </StackPanel>
+
+                    <!-- Guest character: a tick box when editing, a badge when reading -->
+                    <CheckBox Content="Guest character (not a regular member of the party)" IsChecked="{Binding IsGuest}" Margin="0,10,0,0"
+                              Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                    <Border CornerRadius="9" Padding="10,2" Margin="2,10,0,0" HorizontalAlignment="Left"
+                            Background="{StaticResource ArcaneBrush}">
+                        <Border.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                <Binding Path="IsGuest"/>
+                                <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}" Converter="{StaticResource Not}"/>
+                            </MultiBinding>
+                        </Border.Visibility>
+                        <TextBlock Text="✦ GUEST CHARACTER" Foreground="#F7ECD2" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="11" FontWeight="Bold"/>
+                    </Border>
 
                     <StackPanel Margin="0,10,0,0">
                         <TextBlock Text="BIO" Style="{StaticResource FieldLabel}"/>
@@ -151,17 +219,17 @@
     </DataTemplate>
 
     <!-- ============================================================
-         CAST & CHARACTERS PAGE
+         CHARACTERS PAGE (a campaign's characters and who plays them)
     ============================================================ -->
     <DataTemplate DataType="{x:Type m:CastRosterPage}">
         <StackPanel Margin="4,0,12,30">
             <TextBlock Style="{StaticResource PageKicker}" Text="{Binding Campaign.DisplayName}"/>
-            <TextBlock Style="{StaticResource PageTitle}" Text="Cast &amp; Characters"/>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Characters"/>
             <TextBlock Style="{StaticResource Flourish}"/>
 
             <TextBlock Style="{StaticResource Body}" FontSize="16" FontStyle="Italic" Foreground="{StaticResource InkSoftBrush}"
                        Margin="2,0,0,10"
-                       Text="Everyone at the table for this campaign. Episodes pick their cast from this list, so details written here appear on every episode they're in."/>
+                       Text="The characters in this campaign, and who plays them. Episodes pick their cast from this list, so details written here appear on every episode they're in."/>
 
             <StackPanel Style="{StaticResource SectionRow}" Margin="0,4,0,12">
                 <TextBlock Text="The Company" Style="{StaticResource SectionHeader}"/>
@@ -183,22 +251,195 @@
     </ItemsPanelTemplate>
 
     <!-- ============================================================
+         CHARACTER CHIP (campaign and episode pages): a small portrait, the
+         character and who plays them. Clicking opens the Characters page.
+    ============================================================ -->
+    <DataTemplate x:Key="CharacterChip" DataType="{x:Type m:CastMember}">
+        <Button Style="{StaticResource LinkButton}" Margin="0,0,10,4"
+                Command="{Binding DataContext.OpenRosterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                CommandParameter="{Binding}">
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="40" Height="40" Margin="0,0,8,0">
+                    <Ellipse Fill="#33876A45"/>
+                    <ctl:PortraitView Source="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=120}"
+                                      OffsetX="{Binding ImageOffsetX, Mode=OneWay}" OffsetY="{Binding ImageOffsetY, Mode=OneWay}"/>
+                    <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5"/>
+                </Grid>
+                <StackPanel VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding CharacterName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="14"/>
+                        <Border CornerRadius="7" Padding="6,0" Margin="8,0,0,0" VerticalAlignment="Center"
+                                Background="{StaticResource ArcaneBrush}"
+                                Visibility="{Binding IsGuest, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="GUEST" Foreground="#F7ECD2" FontFamily="{StaticResource HeadingFont}" FontSize="9" FontWeight="Bold"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="{Binding PlayerName}" FontSize="14" FontStyle="Italic" Foreground="{StaticResource InkFadedBrush}"/>
+                </StackPanel>
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <!-- ============================================================
+         CAST PAGE (the show's real people, across every campaign)
+    ============================================================ -->
+    <DataTemplate x:Key="PersonCard" DataType="{x:Type m:CastMember}">
+        <Border Style="{StaticResource Card}" Margin="0,0,0,14" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel VerticalAlignment="Top">
+                    <Grid Width="130" Height="130" HorizontalAlignment="Left">
+                        <Ellipse Fill="#33876A45"/>
+                        <TextBlock Text="✦" FontSize="40" Foreground="{StaticResource InkFadedBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   FontFamily="{StaticResource SymbolFont}"/>
+                        <ctl:PortraitView Source="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=400}"
+                                          OffsetX="{Binding ImageOffsetX}" OffsetY="{Binding ImageOffsetY}"
+                                          CanDrag="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="3" IsHitTestVisible="False"/>
+                        <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="5" Opacity="0.6" IsHitTestVisible="False"/>
+                    </Grid>
+                    <Button Style="{StaticResource AddButton}" Margin="22,8,0,0" HorizontalAlignment="Left"
+                            Content="Picture…"
+                            Command="{Binding DataContext.ChoosePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"/>
+                    <TextBlock Text="Drag to reposition" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="2,6,0,0" Width="130" TextWrapping="Wrap" TextAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="{Binding ImagePath, Converter={StaticResource EmptyToCollapsed}}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="4,0,8,0">
+                    <TextBox Style="{StaticResource InkBox}" Text="{Binding PlayerName, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Name" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="24"
+                             Foreground="{StaticResource RubricBrush}"/>
+                    <TextBox Style="{StaticResource InkBox}" Text="{Binding CharacterSummary}" Tag="Role on the show, e.g. Dungeon Master · Player · Host"
+                             FontStyle="Italic" FontSize="16" Foreground="{StaticResource InkSoftBrush}"/>
+
+                    <StackPanel Margin="0,10,0,0">
+                        <TextBlock Text="BIO" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding CharacterDescription}"
+                                 Tag="About them: background, other work, what they bring to the table…" FontSize="16"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Appearances}" Style="{StaticResource Body}" FontSize="14" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="3,10,0,0"
+                               Visibility="{Binding Appearances, Converter={StaticResource EmptyToCollapsed}}"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Style="{StaticResource RemoveButton}" ToolTip="Remove from the cast"
+                        Command="{Binding DataContext.RemoveCastCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}"/>
+            </Grid>
+        </Border>
+    </DataTemplate>
+
+    <DataTemplate DataType="{x:Type vm:CastPageViewModel}">
+        <StackPanel Margin="4,0,12,30">
+            <TextBlock Style="{StaticResource PageKicker}" Text="{Binding Main.Data.ShowName}"/>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Cast"/>
+            <TextBlock Style="{StaticResource Flourish}"/>
+
+            <TextBlock Style="{StaticResource Body}" FontSize="16" FontStyle="Italic" Foreground="{StaticResource InkSoftBrush}"
+                       Margin="2,0,0,10"
+                       Text="The people who make the show, across every campaign. Dungeon Masters listed here can be picked on campaign and episode pages; guest stars can be ticked on episode pages. Each campaign's Characters page says who the cast play there."/>
+
+            <!-- Dungeon Masters -->
+            <StackPanel Style="{StaticResource SectionRow}" Margin="0,4,0,12">
+                <TextBlock Text="Dungeon Masters" Style="{StaticResource SectionHeader}"/>
+                <Button Style="{StaticResource AddButton}" Content="+ Add Dungeon Master" CommandParameter="DungeonMaster"
+                        Command="{Binding DataContext.AddCastMemberCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource EmptyNote}"
+                       Text="No Dungeon Masters yet. Press Edit Page, then + Add Dungeon Master."
+                       Visibility="{Binding DungeonMasters.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+            <ItemsControl ItemsSource="{Binding DungeonMasters}" ItemTemplate="{StaticResource PersonCard}"/>
+
+            <!-- The cast -->
+            <StackPanel Style="{StaticResource SectionRow}" Margin="0,10,0,12">
+                <TextBlock Text="The Company" Style="{StaticResource SectionHeader}"/>
+                <Button Style="{StaticResource AddButton}" Content="+ Add person" CommandParameter="Cast"
+                        Command="{Binding DataContext.AddCastMemberCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource EmptyNote}"
+                       Text="No one on the cast list yet. Press Edit Page, then + Add person."
+                       Visibility="{Binding Cast.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+            <ItemsControl ItemsSource="{Binding Cast}" ItemTemplate="{StaticResource PersonCard}"/>
+
+            <!-- Guest stars -->
+            <StackPanel Style="{StaticResource SectionRow}" Margin="0,10,0,12">
+                <TextBlock Text="Guest Stars" Style="{StaticResource SectionHeader}"/>
+                <Button Style="{StaticResource AddButton}" Content="+ Add guest star" CommandParameter="Guest"
+                        Command="{Binding DataContext.AddCastMemberCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+            </StackPanel>
+            <TextBlock Style="{StaticResource EmptyNote}"
+                       Text="No guest stars yet. Press Edit Page, then + Add guest star. Tick them on the episodes they're in."
+                       Visibility="{Binding Guests.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+            <ItemsControl ItemsSource="{Binding Guests}" ItemTemplate="{StaticResource PersonCard}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ============================================================
+         SHOOT NOTES (an episode's notes from the day of filming)
+    ============================================================ -->
+    <DataTemplate DataType="{x:Type m:ShootNotesPage}">
+        <StackPanel Margin="4,0,12,30">
+            <TextBlock Style="{StaticResource PageKicker}">
+                <Run Text="{Binding Episode.Campaign.DisplayName, Mode=OneWay}"/><Run Text="  ›  "/><Run Text="{Binding Episode.DisplayName, Mode=OneWay}"/>
+            </TextBlock>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Shoot Notes"/>
+            <TextBlock Style="{StaticResource Flourish}"/>
+
+            <TextBlock Style="{StaticResource Body}" FontSize="16" FontStyle="Italic" Foreground="{StaticResource InkSoftBrush}"
+                       Margin="2,0,0,12"
+                       Text="What happened on the day: the moments, mishaps and surprises from filming this episode. The producer writes them here; marketing reads them to shape the go-to-market plan."/>
+
+            <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding Episode.ShootNotes}" MinHeight="320"
+                     Tag="No shoot notes yet. Press Edit Page to write some."/>
+
+            <Button Style="{StaticResource TomeButton}" Content="← Back to the episode" HorizontalAlignment="Left" Margin="0,18,0,0"
+                    Command="{Binding DataContext.CloseShootNotesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ============================================================
          EPISODE PAGE
     ============================================================ -->
     <DataTemplate DataType="{x:Type m:Episode}">
         <StackPanel Margin="4,0,12,30">
             <TextBlock Style="{StaticResource PageKicker}" Text="{Binding Campaign.DisplayName}"/>
 
-            <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                <TextBlock Text="EPISODE" Style="{StaticResource FieldLabel}" FontSize="15" VerticalAlignment="Center"/>
-                <TextBox Style="{StaticResource InkBox}" Text="{Binding Number}" MinWidth="44" Margin="4,0,10,0"
-                         FontFamily="{StaticResource HeadingFont}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
-                <Border CornerRadius="9" Padding="10,2" VerticalAlignment="Center"
-                        Background="{Binding Status, Converter={StaticResource StatusBrush}}">
-                    <TextBlock Text="{Binding Status}" Foreground="#F7ECD2" FontFamily="{StaticResource HeadingFont}"
-                               FontSize="11" FontWeight="Bold"/>
-                </Border>
-            </StackPanel>
+            <DockPanel Margin="0,2,0,0">
+                <Button DockPanel.Dock="Right" Style="{StaticResource TomeButton}" Content="✎  Shoot Notes" Margin="0" VerticalAlignment="Center"
+                        ToolTip="Notes on what happened while this episode was filmed"
+                        Command="{Binding DataContext.OpenShootNotesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding}"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="EPISODE" Style="{StaticResource FieldLabel}" FontSize="15" VerticalAlignment="Center"/>
+                    <TextBox Style="{StaticResource InkBox}" Text="{Binding Number}" MinWidth="44" Margin="4,0,10,0"
+                             FontFamily="{StaticResource HeadingFont}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <Border CornerRadius="9" Padding="10,2" VerticalAlignment="Center"
+                            Background="{Binding Status, Converter={StaticResource StatusBrush}}">
+                        <TextBlock Text="{Binding Status}" Foreground="#F7ECD2" FontFamily="{StaticResource HeadingFont}"
+                                   FontSize="11" FontWeight="Bold"/>
+                    </Border>
+                </StackPanel>
+            </DockPanel>
 
             <TextBox Style="{StaticResource InkTitleBox}" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Tag="Untitled episode"/>
 
@@ -207,16 +448,38 @@
             <UniformGrid Columns="2">
                 <StackPanel Style="{StaticResource Field}">
                     <TextBlock Text="DUNGEON MASTER" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Style="{StaticResource InkBox}" Text="{Binding DungeonMaster}" Tag="Not set"/>
+                    <!-- Reading: this episode's own, or the campaign's -->
+                    <TextBox Style="{StaticResource InkBox}" Text="{Binding DungeonMasterShown, Mode=OneWay}" Tag="Not set"
+                             Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                    <TextBlock Text="from the campaign" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="3,0,0,0">
+                        <TextBlock.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                <Binding Path="IsDungeonMasterInherited"/>
+                                <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}" Converter="{StaticResource Not}"/>
+                            </MultiBinding>
+                        </TextBlock.Visibility>
+                    </TextBlock>
+                    <!-- Editing: leave blank to follow the campaign -->
+                    <ComboBox Style="{StaticResource TomeCombo}" IsEditable="True" Text="{Binding DungeonMaster, UpdateSourceTrigger=PropertyChanged}"
+                              ItemsSource="{Binding DataContext.Data.DungeonMasters, RelativeSource={RelativeSource AncestorType=Window}}"
+                              DisplayMemberPath="PlayerName" TextSearch.TextPath="PlayerName"
+                              ToolTip="Pick a Dungeon Master from the Cast page, or type a name. Leave blank to use the campaign's."/>
+                    <TextBlock FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="3,2,0,0" TextWrapping="Wrap">
+                        <TextBlock.Visibility>
+                            <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                <Binding Path="Campaign.DungeonMaster" Converter="{StaticResource NotEmpty}"/>
+                            </MultiBinding>
+                        </TextBlock.Visibility>
+                        <Run Text="Blank means the campaign's Dungeon Master,"/> <Run Text="{Binding Campaign.DungeonMaster, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
                 </StackPanel>
                 <StackPanel Style="{StaticResource Field}">
                     <TextBlock Text="DATE FILMED" Style="{StaticResource FieldLabel}"/>
                     <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding DateFilmed, Converter={StaticResource DateText}}"/>
                     <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding DateFilmed}"/>
-                </StackPanel>
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="FILMING LOCATION" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Style="{StaticResource InkBox}" Text="{Binding FilmingLocation}" Tag="Not set"/>
                 </StackPanel>
                 <StackPanel Style="{StaticResource Field}">
                     <TextBlock Text="RUNTIME" Style="{StaticResource FieldLabel}"/>
@@ -231,8 +494,8 @@
             <!-- Cast -->
             <StackPanel Style="{StaticResource SectionRow}">
                 <TextBlock Text="The Adventuring Party" Style="{StaticResource SectionHeader}"/>
-                <Button Style="{StaticResource TomeButton}" Content="Cast &amp; Characters →" Margin="14,0,0,0" FontSize="11" Padding="8,3"
-                        ToolTip="Edit the campaign's characters and cast bios"
+                <Button Style="{StaticResource TomeButton}" Content="Characters →" Margin="14,0,0,0" FontSize="11" Padding="8,3"
+                        ToolTip="Edit the campaign's characters and who plays them"
                         Command="{Binding DataContext.OpenRosterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                         CommandParameter="{Binding Campaign}"/>
             </StackPanel>
@@ -245,7 +508,7 @@
                 <StackPanel>
                     <TextBlock Text="WHO'S AT THE TABLE THIS EPISODE?" Style="{StaticResource FieldLabel}" Margin="2,0,0,6"/>
                     <TextBlock Style="{StaticResource EmptyNote}"
-                               Text="This campaign has no characters yet. Add them on the Cast &amp; Characters page."
+                               Text="This campaign has no characters yet. Add them on the Characters page."
                                Visibility="{Binding HasCampaignCharacters, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
                     <ItemsControl ItemsSource="{Binding CastChoices}" ItemsPanel="{StaticResource WrapPanelTemplate}">
                         <ItemsControl.ItemTemplate>
@@ -265,20 +528,56 @@
 
             <TextBlock Style="{StaticResource EmptyNote}" Text="No cast chosen for this episode yet."
                        Visibility="{Binding CastMembers.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
-            <ItemsControl ItemsSource="{Binding CastMembers}" ItemTemplate="{StaticResource CastCard}"
+            <ItemsControl ItemsSource="{Binding CastMembers}" ItemTemplate="{StaticResource CharacterChip}"
                           ItemsPanel="{StaticResource WrapPanelTemplate}"/>
 
-            <!-- Guest cast -->
+            <!-- Guest stars: picked from the Cast page. The whole section is left out when there are none (unless editing). -->
+            <StackPanel>
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="{Binding GuestCount, Converter={StaticResource EmptyToCollapsed}}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
             <StackPanel Style="{StaticResource SectionRow}">
                 <TextBlock Text="Guest Stars" Style="{StaticResource SectionHeader}"/>
-                <Button Style="{StaticResource AddButton}" Content="+ Add guest"
-                        Command="{Binding DataContext.AddGuestCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                        CommandParameter="{Binding}"/>
             </StackPanel>
+            <Border Style="{StaticResource Card}" Margin="0,0,0,12">
+                <Border.Visibility>
+                    <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}" Converter="{StaticResource BoolToVis}"/>
+                </Border.Visibility>
+                <StackPanel>
+                    <TextBlock Text="WHO'S GUESTING THIS EPISODE?" Style="{StaticResource FieldLabel}" Margin="2,0,0,6"/>
+                    <TextBlock Style="{StaticResource EmptyNote}"
+                               Text="No guest stars on the Cast page yet. Add them there, then tick them here."
+                               Visibility="{Binding HasShowGuests, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                    <ItemsControl ItemsSource="{Binding GuestChoices}" ItemsPanel="{StaticResource WrapPanelTemplate}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type m:GuestChoice}">
+                                <CheckBox IsChecked="{Binding IsInEpisode}" Margin="0,0,22,6">
+                                    <TextBlock>
+                                        <Run Text="{Binding Member.PlayerName, Mode=OneWay}" FontWeight="SemiBold"/>
+                                        <Run Text="{Binding Member.CharacterSummary, Mode=OneWay}" FontStyle="Italic"
+                                             Foreground="{StaticResource InkFadedBrush}"/>
+                                    </TextBlock>
+                                </CheckBox>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
             <TextBlock Style="{StaticResource EmptyNote}" Text="No guest stars."
-                       Visibility="{Binding GuestCast.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+                       Visibility="{Binding GuestCount, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+            <ItemsControl ItemsSource="{Binding Guests}" ItemTemplate="{StaticResource GuestCard}"
+                          ItemsPanel="{StaticResource WrapPanelTemplate}"/>
+            <!-- Guests written straight onto this episode by earlier versions -->
             <ItemsControl ItemsSource="{Binding GuestCast}" ItemTemplate="{StaticResource CastCard}"
                           ItemsPanel="{StaticResource WrapPanelTemplate}"/>
+            </StackPanel>
 
             <!-- Key moments -->
             <StackPanel Style="{StaticResource SectionRow}">
@@ -328,22 +627,80 @@
                         <Grid Margin="0,0,0,6">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="22"/>
-                                <ColumnDefinition Width="220"/>
                                 <ColumnDefinition Width="200"/>
+                                <ColumnDefinition Width="210"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="☾" Foreground="{StaticResource GoldBrush}" FontSize="16" Margin="0,2,0,0"
                                        FontFamily="{StaticResource SymbolFont}"/>
-                            <Grid Grid.Column="1" Margin="0,0,10,0">
+                            <Grid Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Top">
                                 <TextBlock Style="{StaticResource ViewOnlyBody}" FontWeight="SemiBold"
                                            Text="{Binding Date, Converter={StaticResource DateText}}"/>
                                 <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding Date}"/>
                             </Grid>
-                            <TextBox Grid.Column="2" Style="{StaticResource InkBox}" Text="{Binding Platform}" Tag="Network / platform" Margin="0,0,10,0"/>
+
+                            <!-- Platforms: text when reading; a tick-list drop-down when editing -->
+                            <Grid Grid.Column="2" Margin="0,0,10,0" VerticalAlignment="Top">
+                                <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding Platform}"/>
+                                <ToggleButton x:Name="PlatformToggle">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource TomePicker}">
+                                            <Style.Triggers>
+                                                <!-- While the list is open, a click on the field only closes it (instead of closing and reopening) -->
+                                                <DataTrigger Binding="{Binding IsOpen, ElementName=PlatformPopup}" Value="True">
+                                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <Grid>
+                                        <TextBlock Text="{Binding Platform}" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Choose platforms…" Foreground="{StaticResource InkFadedBrush}" FontStyle="Italic"
+                                                   Visibility="{Binding Platform, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+                                    </Grid>
+                                </ToggleButton>
+                                <Popup x:Name="PlatformPopup" PlacementTarget="{Binding ElementName=PlatformToggle}" Placement="Bottom"
+                                       StaysOpen="False" AllowsTransparency="True"
+                                       IsOpen="{Binding IsChecked, ElementName=PlatformToggle, Mode=TwoWay}">
+                                    <Border Background="#F7ECD2" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1" CornerRadius="4"
+                                            Padding="12,8" Margin="0,2,10,10" MinWidth="190">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="10" ShadowDepth="3" Opacity="0.4"/>
+                                        </Border.Effect>
+                                        <ItemsControl ItemsSource="{Binding PlatformChoices}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type m:PlatformChoice}">
+                                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding IsSelected}" Margin="0,3"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
                             <TextBox Grid.Column="3" Style="{StaticResource InkBox}" Text="{Binding Notes}" Tag="Notes"
-                                     Foreground="{StaticResource InkSoftBrush}" FontStyle="Italic"/>
-                            <Button Grid.Column="4" Style="{StaticResource RemoveButton}" Margin="8,0,0,0"
+                                     Foreground="{StaticResource InkSoftBrush}" FontStyle="Italic" VerticalAlignment="Top"/>
+
+                            <!-- Link: a button when reading; the web address when editing -->
+                            <Grid Grid.Column="4" Margin="10,0,0,0" VerticalAlignment="Top">
+                                <Button Style="{StaticResource TomeButton}" Content="Link ↗" FontSize="11" Padding="8,3" Margin="0"
+                                        ToolTip="{Binding Link}"
+                                        Command="{Binding DataContext.OpenLinkCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding Link}">
+                                    <Button.Visibility>
+                                        <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                            <Binding Path="Link" Converter="{StaticResource NotEmpty}"/>
+                                            <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}" Converter="{StaticResource Not}"/>
+                                        </MultiBinding>
+                                    </Button.Visibility>
+                                </Button>
+                                <TextBox Style="{StaticResource InkBox}" Text="{Binding Link}" Tag="Link (https://…)" Width="220" TextWrapping="NoWrap"
+                                         Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
+                            </Grid>
+
+                            <Button Grid.Column="5" Style="{StaticResource RemoveButton}" Margin="8,0,0,0"
                                     Command="{Binding DataContext.RemoveAirDateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                     CommandParameter="{Binding}"/>
                         </Grid>
@@ -372,80 +729,110 @@
             </StackPanel>
             <TextBox Style="{StaticResource InkTitleBox}" Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Tag="Untitled campaign"/>
 
-            <!-- Cover art -->
-            <Border CornerRadius="6" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2" Margin="0,12,0,0"
-                    MaxHeight="260" ClipToBounds="True"
-                    Visibility="{Binding CoverImage, Converter={StaticResource EmptyToCollapsed}}">
-                <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=1400}" Stretch="UniformToFill"/>
-            </Border>
-            <Button Style="{StaticResource AddButton}" Content="Choose cover art…" HorizontalAlignment="Left" Margin="0,10,0,0"
-                    Command="{Binding DataContext.ChooseCoverCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                    CommandParameter="{Binding}"/>
-
             <TextBlock Style="{StaticResource Flourish}"/>
 
-            <UniformGrid Columns="2">
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="DUNGEON MASTER" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Style="{StaticResource InkBox}" Text="{Binding DungeonMaster}" Tag="Not set"/>
+            <!-- The campaign's details on the left; the book it's played from (cover art, then title) on the right -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <UniformGrid Columns="2" VerticalAlignment="Top">
+                    <StackPanel Style="{StaticResource Field}">
+                        <TextBlock Text="DUNGEON MASTER" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource InkBox}" Text="{Binding DungeonMaster}" Tag="Not set"
+                                 Visibility="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                        <ComboBox Style="{StaticResource TomeCombo}" IsEditable="True" Text="{Binding DungeonMaster, UpdateSourceTrigger=PropertyChanged}"
+                                  ItemsSource="{Binding DataContext.Data.DungeonMasters, RelativeSource={RelativeSource AncestorType=Window}}"
+                                  DisplayMemberPath="PlayerName" TextSearch.TextPath="PlayerName"
+                                  ToolTip="Pick a Dungeon Master from the Cast page, or type a name"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Field}">
+                        <TextBlock Text="SETTING / GAME SYSTEM" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource InkBox}" Text="{Binding Setting}" Tag="e.g. D&amp;D 5e, Warcraft"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Field}">
+                        <TextBlock Text="FILMING STARTS" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding FilmingStart, Converter={StaticResource DateText}}"/>
+                        <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding FilmingStart}"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Field}">
+                        <TextBlock Text="FILMING ENDS" Style="{StaticResource FieldLabel}"/>
+                        <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding FilmingEnd, Converter={StaticResource DateText}}"/>
+                        <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding FilmingEnd}"/>
+                    </StackPanel>
+                    <StackPanel Style="{StaticResource Field}">
+                        <TextBlock Text="FILMING LOCATION" Style="{StaticResource FieldLabel}"/>
+                        <TextBox Style="{StaticResource InkBox}" Text="{Binding FilmingLocation}" Tag="Not set"/>
+                    </StackPanel>
+                </UniformGrid>
+
+                <StackPanel Grid.Column="1" Width="300" Margin="28,0,0,14" VerticalAlignment="Top">
+                    <!-- Cover art in a gilt picture frame -->
+                    <Border CornerRadius="3" BorderBrush="{StaticResource GoldBrush}" BorderThickness="4" Padding="5" Background="#3A2412"
+                            HorizontalAlignment="Center"
+                            Visibility="{Binding CoverImage, Converter={StaticResource EmptyToCollapsed}}">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="16" ShadowDepth="5" Direction="300" Opacity="0.55"/>
+                        </Border.Effect>
+                        <Border BorderBrush="{StaticResource GoldLightBrush}" BorderThickness="1" Padding="4" Background="#1E1008">
+                            <Border BorderBrush="#66000000" BorderThickness="1">
+                                <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=900}" Stretch="Uniform"
+                                       MaxHeight="400" RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Border>
+                        </Border>
+                    </Border>
+                    <!-- Edit mode: where the cover art goes, until some is chosen -->
+                    <Grid Height="380">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Visibility" Value="{Binding CoverImage, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Rectangle RadiusX="6" RadiusY="6" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" StrokeDashArray="4 3" Fill="#1A876A45"/>
+                        <TextBlock Text="Cover art" FontFamily="{StaticResource BodyFont}" FontSize="15" FontStyle="Italic"
+                                   Foreground="{StaticResource InkFadedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
+                        <Button Style="{StaticResource AddButton}" Content="Choose cover art…" Margin="0"
+                                Command="{Binding DataContext.ChooseCoverCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"/>
+                        <Button Style="{StaticResource AddButton}" Content="Remove" Margin="6,0,0,0"
+                                Command="{Binding DataContext.RemoveCoverCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                    <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    <Binding Path="CoverImage" Converter="{StaticResource NotEmpty}"/>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Text="BOOK TITLE" Style="{StaticResource FieldLabel}" Margin="2,10,0,1"/>
+                    <TextBox Style="{StaticResource InkBox}" Text="{Binding BookTitle, UpdateSourceTrigger=PropertyChanged}"
+                             Tag="Not set" FontFamily="{StaticResource HeadingFont}" FontSize="16" Foreground="{StaticResource InkSoftBrush}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="SETTING / GAME SYSTEM" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Style="{StaticResource InkBox}" Text="{Binding Setting}" Tag="e.g. D&amp;D 5e, Warcraft"/>
-                </StackPanel>
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="FILMING STARTS" Style="{StaticResource FieldLabel}"/>
-                    <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding FilmingStart, Converter={StaticResource DateText}}"/>
-                    <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding FilmingStart}"/>
-                </StackPanel>
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="FILMING ENDS" Style="{StaticResource FieldLabel}"/>
-                    <TextBlock Style="{StaticResource ViewOnlyBody}" Text="{Binding FilmingEnd, Converter={StaticResource DateText}}"/>
-                    <DatePicker Style="{StaticResource TomeDatePicker}" SelectedDate="{Binding FilmingEnd}"/>
-                </StackPanel>
-                <StackPanel Style="{StaticResource Field}">
-                    <TextBlock Text="FILMING LOCATION" Style="{StaticResource FieldLabel}"/>
-                    <TextBox Style="{StaticResource InkBox}" Text="{Binding FilmingLocation}" Tag="Not set"/>
-                </StackPanel>
-            </UniformGrid>
+            </Grid>
 
             <TextBlock Text="About this Campaign" Style="{StaticResource SectionHeader}" Margin="0,8,0,6"/>
             <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding Description}" Tag="No description yet."/>
 
             <StackPanel Style="{StaticResource SectionRow}">
-                <TextBlock Text="Cast &amp; Characters" Style="{StaticResource SectionHeader}"/>
+                <TextBlock Text="Characters" Style="{StaticResource SectionHeader}"/>
                 <Button Style="{StaticResource TomeButton}" Content="Open →" Margin="14,0,0,0" FontSize="11" Padding="8,3"
                         Command="{Binding DataContext.OpenRosterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                         CommandParameter="{Binding}"/>
             </StackPanel>
             <TextBlock Style="{StaticResource EmptyNote}" Text="No characters yet."
                        Visibility="{Binding Characters.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}"/>
-            <ItemsControl ItemsSource="{Binding Characters}" ItemsPanel="{StaticResource WrapPanelTemplate}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type m:CastMember}">
-                        <Button Style="{StaticResource LinkButton}" Margin="0,0,10,4"
-                                Command="{Binding DataContext.OpenRosterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ItemsControl}}">
-                            <StackPanel Orientation="Horizontal">
-                                <Grid Width="40" Height="40" Margin="0,0,8,0">
-                                    <Ellipse Fill="#33876A45"/>
-                                    <Ellipse>
-                                        <Ellipse.Fill>
-                                            <ImageBrush Stretch="UniformToFill"
-                                                        ImageSource="{Binding ImagePath, Converter={StaticResource Image}, ConverterParameter=120}"/>
-                                        </Ellipse.Fill>
-                                    </Ellipse>
-                                    <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5"/>
-                                </Grid>
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding CharacterName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="14"/>
-                                    <TextBlock Text="{Binding PlayerName}" FontSize="14" FontStyle="Italic" Foreground="{StaticResource InkFadedBrush}"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Characters}" ItemTemplate="{StaticResource CharacterChip}"
+                          ItemsPanel="{StaticResource WrapPanelTemplate}"/>
 
             <StackPanel Style="{StaticResource SectionRow}">
                 <TextBlock Text="Episodes" Style="{StaticResource SectionHeader}"/>
@@ -700,7 +1087,7 @@
                     <DropShadowEffect BlurRadius="8" ShadowDepth="3" Opacity="0.35"/>
                 </Image.Effect>
             </Image>
-            <TextBlock Text="The Producer's Guide" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="26"
+            <TextBlock Text="The Production Guide" FontFamily="{StaticResource TitleFont}" FontWeight="Bold" FontSize="26"
                        Foreground="{StaticResource RubricBrush}" HorizontalAlignment="Center" Margin="0,10,0,0"/>
             <TextBlock Style="{StaticResource Flourish}"/>
 
@@ -782,7 +1169,7 @@
             </StackPanel>
 
             <TextBlock Text="The Guide" Style="{StaticResource SectionHeader}" Margin="0,8,0,8"/>
-            <StackPanel Visibility="{Binding CanUseFolder, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
+            <StackPanel Visibility="{Binding CanChooseWhere, Converter={StaticResource BoolToVis}}" Margin="0,0,0,10">
                 <RadioButton GroupName="Where" IsChecked="{Binding UseServer}" Content="The shared guide server" Margin="0,0,0,4"/>
                 <RadioButton GroupName="Where" IsChecked="{Binding UseFolder}" Content="A folder on this computer (e.g. a shared OneDrive folder)"/>
             </StackPanel>
@@ -811,13 +1198,22 @@
                 <TextBlock Style="{StaticResource Body}" FontSize="16" TextWrapping="Wrap">
                     <Run Text="Kept in"/> <Run Text="{Binding DataFolder, Mode=OneWay}" FontStyle="Italic"/>
                 </TextBlock>
+                <TextBlock Style="{StaticResource EmptyNote}"
+                           Text="The guide lives beside the app in the shared folder, so everyone who opens the app from there sees the same guide. Who can change it is set by the folder's sharing permissions."
+                           Visibility="{Binding FolderIsFixed, Converter={StaticResource BoolToVis}}"/>
                 <Button Style="{StaticResource TomeButton}" Content="Choose folder…" HorizontalAlignment="Left" Margin="0,8,0,0"
                         Command="{Binding ChooseFolderCommand}" IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"
+                        Visibility="{Binding FolderIsFixed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                         ToolTip="Move the guide to a shared folder (e.g. OneDrive) so the team can use it, or open one that's already there"/>
             </StackPanel>
 
             <TextBlock Style="{StaticResource Body}" FontSize="16" Foreground="{StaticResource RubricBrush}" Margin="2,14,0,0"
                        Text="{Binding Problem}" Visibility="{Binding Problem, Converter={StaticResource EmptyToCollapsed}}"/>
+
+            <TextBlock Style="{StaticResource Body}" FontSize="14" Foreground="{StaticResource InkFadedBrush}" FontStyle="Italic" Margin="2,24,0,0"
+                       Text="{Binding VersionText, Mode=OneWay}"/>
+            <TextBlock Style="{StaticResource Body}" FontSize="14" Foreground="{StaticResource RubricBrush}" Margin="2,4,0,0" TextWrapping="Wrap"
+                       Text="{Binding Main.VersionWarning}" Visibility="{Binding Main.VersionWarning, Converter={StaticResource EmptyToCollapsed}}"/>
 
             <Button Style="{StaticResource TomeButton}" Content="Use these settings" HorizontalAlignment="Left" Margin="0,16,0,0"
                     Command="{Binding ApplyCommand}" IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"/>
@@ -835,7 +1231,8 @@
             <TextBlock Style="{StaticResource Body}" Text="{Binding Message}"/>
             <WrapPanel Margin="0,18,0,0">
                 <Button Style="{StaticResource TomeButton}" Content="Try again" Command="{Binding Main.ReconnectCommand}"/>
-                <Button Style="{StaticResource TomeButton}" Content="Settings…" Command="{Binding Main.ShowSettingsCommand}"/>
+                <Button Style="{StaticResource TomeButton}" Content="Settings…" Command="{Binding Main.ShowSettingsCommand}"
+                        Visibility="{Binding CanOpenSettings, Converter={StaticResource BoolToVis}}"/>
             </WrapPanel>
         </StackPanel>
     </DataTemplate>

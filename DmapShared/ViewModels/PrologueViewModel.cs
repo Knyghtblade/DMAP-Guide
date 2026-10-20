@@ -19,7 +19,7 @@ public class PrologueViewModel
     /// <summary>"This guide is kept in …" / "This guide is shared from …".</summary>
     public string LocationText => Main.UsesServer
         ? $"This guide is shared from {Main.Location}"
-        : $"This guide is kept in {Main.Location}";
+        : $"This guide is kept in {Main.Location}" + (Main.IsReadOnly ? " (you can read it but not change it)" : "");
 
     public PrologueViewModel(MainViewModel main)
     {

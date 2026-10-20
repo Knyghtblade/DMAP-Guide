@@ -12,7 +12,7 @@
         <Label Style="{StaticResource Body}" Text="{Binding Message}"/>
         <HorizontalStackLayout Spacing="8" Margin="0,16,0,0">
             <c:TomeButton Text="Try again" Command="{Binding Main.ReconnectCommand}"/>
-            <c:TomeButton Text="Settings…" Command="{Binding Main.ShowSettingsCommand}"/>
+            <c:TomeButton Text="Settings…" Command="{Binding Main.ShowSettingsCommand}" IsVisible="{Binding CanOpenSettings}"/>
         </HorizontalStackLayout>
     </VerticalStackLayout>
 </ContentView>

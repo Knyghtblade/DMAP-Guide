@@ -6,8 +6,13 @@ namespace DmapAndroid.Services;
 public sealed class MauiPlatform : IPlatformServices
 {
     public bool SupportsFolders => false;
+    public bool SupportsServer => true;
 
     public string CacheFolder => FileSystem.CacheDirectory;
+
+    public string AppVersion => AppInfo.Current.VersionString;
+
+    public void OpenLink(string url) => _ = Microsoft.Maui.ApplicationModel.Launcher.Default.OpenAsync(new Uri(url));
 
     private static Page Page => Application.Current?.Windows.FirstOrDefault()?.Page
                                 ?? throw new InvalidOperationException("The app has no window yet.");

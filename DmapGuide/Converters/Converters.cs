@@ -44,6 +44,21 @@ public class EmptyToCollapsedConverter : IValueConverter
     public object ConvertBack(object value, Type t, object? p, CultureInfo c) => throw new NotSupportedException();
 }
 
+/// <summary>True when the text has something in it.</summary>
+public class NotEmptyConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object? p, CultureInfo c) => value is string s && !string.IsNullOrWhiteSpace(s);
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => throw new NotSupportedException();
+}
+
+/// <summary>Visible only when every value is true (for "in edit mode AND has a picture").</summary>
+public class AllTrueToVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type t, object? p, CultureInfo c) =>
+        values.All(v => v is bool b && b) ? Visibility.Visible : Visibility.Collapsed;
+    public object[] ConvertBack(object value, Type[] t, object? p, CultureInfo c) => throw new NotSupportedException();
+}
+
 /// <summary>DateTime? → text. Parameter is the format (default "ddd, MMM d, yyyy").</summary>
 public class DateTextConverter : IValueConverter
 {

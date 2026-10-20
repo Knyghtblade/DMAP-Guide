@@ -123,12 +123,17 @@ public sealed class ServerGuideStore : IGuideStore
                     break;
                 }
 
+                // Remember what was sent (plus the server's stamp), not the live page: it may
+                // have been edited again while the save was on its way, and those edits still
+                // need saving.
+                string stored = json;
                 if (record is TreeNode node)
                 {
                     node.LastEditedBy = envelope.UpdatedBy;
                     node.LastEdited = envelope.UpdatedAt;
+                    stored = GuideRecords.WithStamp(json, node.LastEditedBy, node.LastEdited);
                 }
-                Remember(envelope, GuideRecords.Serialize(record));
+                Remember(envelope, stored);
                 _waiting.Remove(id);
                 written++;
                 break;

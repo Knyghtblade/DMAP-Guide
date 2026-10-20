@@ -18,7 +18,26 @@ public partial class Episode : TreeNode
     [NotifyPropertyChangedFor(nameof(DisplayName))]
     private string _title = "";
 
-    [ObservableProperty] private string _dungeonMaster = "";
+    /// <summary>This episode's own Dungeon Master. Blank means the campaign's (see <see cref="DungeonMasterShown"/>).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DungeonMasterShown))]
+    [NotifyPropertyChangedFor(nameof(IsDungeonMasterInherited))]
+    private string _dungeonMaster = "";
+
+    /// <summary>The Dungeon Master to show: this episode's own, or the campaign's when it has none.</summary>
+    [JsonIgnore]
+    public string DungeonMasterShown => IsDungeonMasterInherited ? Campaign!.DungeonMaster : DungeonMaster;
+
+    [JsonIgnore]
+    public bool IsDungeonMasterInherited =>
+        string.IsNullOrWhiteSpace(DungeonMaster) && !string.IsNullOrWhiteSpace(Campaign?.DungeonMaster);
+
+    /// <summary>The campaign's Dungeon Master changed: redraw what this episode shows.</summary>
+    public void RefreshDungeonMaster()
+    {
+        OnPropertyChanged(nameof(DungeonMasterShown));
+        OnPropertyChanged(nameof(IsDungeonMasterInherited));
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Status))]
@@ -29,6 +48,17 @@ public partial class Episode : TreeNode
     [ObservableProperty] private string _synopsis = "";
     [ObservableProperty] private string _productionNotes = "";
 
+    /// <summary>Free-form notes on what happened during filming, kept on the episode's own Shoot Notes page.</summary>
+    [ObservableProperty] private string _shootNotes = "";
+
+    /// <summary>The "Shoot Notes" page opened from the episode (not saved on its own; the notes live on the episode).</summary>
+    [JsonIgnore] public ShootNotesPage ShootNotesPage { get; }
+
+    public Episode()
+    {
+        ShootNotesPage = new ShootNotesPage(this);
+    }
+
     /// <summary>Which of the campaign's characters are in this episode.</summary>
     public ObservableCollection<Guid> CastIds { get; set; } = new();
 
@@ -36,7 +66,12 @@ public partial class Episode : TreeNode
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<CastMember>? Cast { get; set; }
 
+    /// <summary>Guest stars written straight onto the episode by earlier versions. New guests come from the Cast page (<see cref="GuestIds"/>).</summary>
     public ObservableCollection<CastMember> GuestCast { get; set; } = new();
+
+    /// <summary>Which of the show's guest stars (the Cast page) are in this episode.</summary>
+    public ObservableCollection<Guid> GuestIds { get; set; } = new();
+
     public ObservableCollection<KeyMoment> KeyMoments { get; set; } = new();
     public ObservableCollection<AirDate> AirDates { get; set; } = new();
 
@@ -64,11 +99,38 @@ public partial class Episode : TreeNode
         OnPropertyChanged(nameof(CastMembers));
     }
 
+    private IEnumerable<CastMember> ShowGuests => Campaign?.Season?.Show?.Guests ?? Enumerable.Empty<CastMember>();
+
+    /// <summary>The guest stars in this episode, in the Cast page's order.</summary>
+    [JsonIgnore]
+    public List<CastMember> Guests => ShowGuests.Where(g => GuestIds.Contains(g.Id)).ToList();
+
+    /// <summary>One checkbox per guest star on the Cast page, for picking who's in this episode.</summary>
+    [JsonIgnore]
+    public List<GuestChoice> GuestChoices => ShowGuests.Select(g => new GuestChoice(this, g)).ToList();
+
+    [JsonIgnore] public bool HasShowGuests => ShowGuests.Any();
+
+    /// <summary>Guests from the Cast page plus any written straight onto this episode.</summary>
+    [JsonIgnore] public int GuestCount => Guests.Count + GuestCast.Count;
+
+    public void SetGuest(CastMember member, bool inEpisode)
+    {
+        if (inEpisode && !GuestIds.Contains(member.Id)) GuestIds.Add(member.Id);
+        else if (!inEpisode) GuestIds.Remove(member.Id);
+        OnPropertyChanged(nameof(Guests));
+        OnPropertyChanged(nameof(GuestCount));
+    }
+
     public void RefreshCast()
     {
         OnPropertyChanged(nameof(CastMembers));
         OnPropertyChanged(nameof(CastChoices));
         OnPropertyChanged(nameof(HasCampaignCharacters));
+        OnPropertyChanged(nameof(Guests));
+        OnPropertyChanged(nameof(GuestChoices));
+        OnPropertyChanged(nameof(HasShowGuests));
+        OnPropertyChanged(nameof(GuestCount));
     }
 
     [JsonIgnore]
@@ -123,7 +185,18 @@ public partial class Episode : TreeNode
     }
 }
 
-/// <summary>A character and the cast member who plays them (campaign cast list or a guest star).</summary>
+/// <summary>Page node for an episode's shoot notes (not saved; the notes live on the episode).</summary>
+public class ShootNotesPage : TreeNode
+{
+    public Episode Episode { get; }
+
+    public ShootNotesPage(Episode episode) => Episode = episode;
+
+    public override string DisplayName => "Shoot Notes";
+    public override TreeNode? ParentNode => Episode;
+}
+
+/// <summary>A character and the cast member who plays them (campaign cast list, a guest star, or the show's cast).</summary>
 public partial class CastMember : ObservableObject
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -134,7 +207,18 @@ public partial class CastMember : ObservableObject
 
     /// <summary>The character's bio.</summary>
     [ObservableProperty] private string _characterDescription = "";
+
+    /// <summary>A guest character (campaign characters only): not a regular member of the party.</summary>
+    [ObservableProperty] private bool _isGuest;
     [ObservableProperty] private string _imagePath = "";
+
+    /// <summary>
+    /// Where the picture sits inside its circle, from -1 to 1 on each axis: 0 is centred,
+    /// 1 shows the picture's top (or left) edge, -1 its bottom (or right) edge.
+    /// Only the axis the picture overflows on has any effect.
+    /// </summary>
+    [ObservableProperty] private double _imageOffsetX;
+    [ObservableProperty] private double _imageOffsetY;
 
     [ObservableProperty]
     [property: JsonIgnore]
@@ -164,6 +248,26 @@ public class CastChoice
     }
 }
 
+/// <summary>A guest star from the Cast page with a checkbox for "in this episode".</summary>
+public class GuestChoice
+{
+    private readonly Episode _episode;
+
+    public GuestChoice(Episode episode, CastMember member)
+    {
+        _episode = episode;
+        Member = member;
+    }
+
+    public CastMember Member { get; }
+
+    public bool IsInEpisode
+    {
+        get => _episode.GuestIds.Contains(Member.Id);
+        set => _episode.SetGuest(Member, value);
+    }
+}
+
 public partial class KeyMoment : ObservableObject
 {
     [ObservableProperty] private string _timestamp = "";
@@ -172,7 +276,59 @@ public partial class KeyMoment : ObservableObject
 
 public partial class AirDate : ObservableObject
 {
+    /// <summary>The platforms offered in the tick-list. Anything else typed earlier is kept as well.</summary>
+    public static readonly string[] KnownPlatforms = { "YouTube", "Twitch", "Amazon Prime", "Disney+" };
+
     [ObservableProperty] private DateTime? _date;
-    [ObservableProperty] private string _platform = "";
+
+    /// <summary>Where it airs, as "YouTube, Twitch" (one or more platforms).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PlatformChoices))]
+    private string _platform = "";
+
     [ObservableProperty] private string _notes = "";
+
+    /// <summary>A web address for this airing (the episode's page on the platform, say).</summary>
+    [ObservableProperty] private string _link = "";
+
+    [JsonIgnore]
+    public IEnumerable<string> Platforms =>
+        Platform.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    /// <summary>One tick box per known platform.</summary>
+    [JsonIgnore]
+    public List<PlatformChoice> PlatformChoices => KnownPlatforms.Select(p => new PlatformChoice(this, p)).ToList();
+
+    public bool HasPlatform(string name) => Platforms.Contains(name, StringComparer.OrdinalIgnoreCase);
+
+    public void SetPlatform(string name, bool on)
+    {
+        var chosen = Platforms.Where(p => !string.Equals(p, name, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (on) chosen.Add(name);
+
+        // Known platforms in their usual order, then anything typed by hand.
+        var known = KnownPlatforms.Where(k => chosen.Contains(k, StringComparer.OrdinalIgnoreCase));
+        var other = chosen.Where(p => !KnownPlatforms.Contains(p, StringComparer.OrdinalIgnoreCase));
+        Platform = string.Join(", ", known.Concat(other));
+    }
+}
+
+/// <summary>A platform with a tick box for "airs here".</summary>
+public class PlatformChoice
+{
+    private readonly AirDate _airDate;
+
+    public PlatformChoice(AirDate airDate, string name)
+    {
+        _airDate = airDate;
+        Name = name;
+    }
+
+    public string Name { get; }
+
+    public bool IsSelected
+    {
+        get => _airDate.HasPlatform(Name);
+        set => _airDate.SetPlatform(Name, value);
+    }
 }
