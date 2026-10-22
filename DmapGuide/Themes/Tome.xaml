@@ -422,6 +422,21 @@
                 Value="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}"/>
     </Style>
 
+    <!-- "Remove picture" under a portrait's Picture… button: only while editing and when there is a picture -->
+    <Style x:Key="RemovePictureButton" TargetType="Button" BasedOn="{StaticResource AddButton}">
+        <Setter Property="Content" Value="Remove picture"/>
+        <Setter Property="Command" Value="{Binding DataContext.RemovePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+        <Setter Property="CommandParameter" Value="{Binding}"/>
+        <Setter Property="Visibility">
+            <Setter.Value>
+                <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                    <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                    <Binding Path="ImagePath" Converter="{StaticResource NotEmpty}"/>
+                </MultiBinding>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ============================================================
          CARDS / BADGES
     ============================================================ -->

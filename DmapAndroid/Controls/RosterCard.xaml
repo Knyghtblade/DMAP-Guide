@@ -11,6 +11,7 @@
             <VerticalStackLayout Spacing="6">
                 <c:Portrait ImagePath="{Binding ImagePath}" Size="104"/>
                 <c:AddButton Text="Picture…" Margin="14,0,0,0" HorizontalOptions="Start" Clicked="OnChoosePortrait"/>
+                <c:AddButton Text="Remove picture" Margin="14,0,0,0" HorizontalOptions="Start" Clicked="OnRemovePortrait"/>
             </VerticalStackLayout>
 
             <VerticalStackLayout Grid.Column="1" Spacing="2">

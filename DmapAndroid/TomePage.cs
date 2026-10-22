@@ -26,6 +26,7 @@ public sealed class TomePage : ContentPage
     private readonly ScrollView _pageScroller = new();
     private readonly Border _rightLeaf = new();
     private readonly Button _editButton = new TomeButton { Text = "✎  Edit Page", Margin = 0 };
+    private readonly Button _deleteButton = new TomeButton { Text = "🗑", Margin = new Thickness(0, 0, 6, 0), TextColor = Tome.Rubric, IsVisible = false };
     private readonly Grid _pageActions = new() { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) }, RowDefinitions = { new(GridLength.Auto), new(GridLength.Auto) }, ColumnSpacing = 4, RowSpacing = 4 };
 
     public TomePage(MainViewModel vm)
@@ -157,7 +158,7 @@ public sealed class TomePage : ContentPage
         _pageActions.Add(new TomeButton { Text = "+ Season", Command = _vm.AddSeasonCommand, HorizontalOptions = LayoutOptions.Fill }, 0, 0);
         _pageActions.Add(new TomeButton { Text = "+ Campaign", Command = _vm.AddCampaignCommand, HorizontalOptions = LayoutOptions.Fill }, 1, 0);
         _pageActions.Add(new TomeButton { Text = "+ Episode", Command = _vm.AddEpisodeCommand, HorizontalOptions = LayoutOptions.Fill }, 0, 1);
-        _pageActions.Add(new TomeButton { Text = "Delete", Command = _vm.DeleteCurrentCommand, HorizontalOptions = LayoutOptions.Fill }, 1, 1);
+        _pageActions.Add(new TomeButton { Text = "Delete page", Command = _vm.DeleteCurrentCommand, HorizontalOptions = LayoutOptions.Fill }, 1, 1);
         _pageActions.IsEnabled = _vm.CanChangePages;
 
         var leftPage = new Grid
@@ -177,19 +178,22 @@ public sealed class TomePage : ContentPage
         status.SetBinding(Label.TextProperty, nameof(MainViewModel.StatusText));
         _editButton.Command = _vm.ToggleEditCommand;
         _editButton.SetBinding(IsVisibleProperty, nameof(MainViewModel.CanEdit));
+        // Delete the season, campaign or episode that's open (while editing).
+        _deleteButton.Command = _vm.DeleteCurrentCommand;
         // Save my changes and pick up everyone else's, without leaving the app.
         var refreshButton = new TomeButton { Text = "⟳", Margin = new Thickness(0, 0, 6, 0), Command = _vm.RefreshCommand };
         refreshButton.SetBinding(IsVisibleProperty, nameof(MainViewModel.IsConnected));
 
         var pageHeader = new Grid
         {
-            ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) },
+            ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto), new(GridLength.Auto) },
             Margin = new Thickness(0, 0, 0, 4)
         };
         pageHeader.Add(breadcrumb, 0, 0);
         pageHeader.Add(status, 1, 0);
         pageHeader.Add(refreshButton, 2, 0);
-        pageHeader.Add(_editButton, 3, 0);
+        pageHeader.Add(_deleteButton, 3, 0);
+        pageHeader.Add(_editButton, 4, 0);
 
         _pageScroller.Content = _pageHost;
         var rightContent = new Grid
@@ -259,6 +263,7 @@ public sealed class TomePage : ContentPage
         {
             case nameof(MainViewModel.CurrentPage):
                 ShowPage(_vm.CurrentPage, animate: true);
+                ShowEditing();
                 ScheduleTocRebuild();
                 break;
             case nameof(MainViewModel.Data):
@@ -277,6 +282,7 @@ public sealed class TomePage : ContentPage
     private void ShowEditing()
     {
         _editButton.Text = _vm.IsEditing ? "✓  Done" : "✎  Edit Page";
+        _deleteButton.IsVisible = _vm.IsEditing && _vm.DeletePageLabel.Length > 0;
         // Arcane glow around the page while writing.
         _rightLeaf.Stroke = _vm.IsEditing ? Tome.Arcane : Colors.Transparent;
         _rightLeaf.StrokeThickness = _vm.IsEditing ? 2.5 : 0;

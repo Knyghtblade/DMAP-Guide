@@ -178,7 +178,7 @@
                                 <Button Style="{StaticResource TomeButton}" Content="+ Season" Command="{Binding AddSeasonCommand}"/>
                                 <Button Style="{StaticResource TomeButton}" Content="+ Campaign" Command="{Binding AddCampaignCommand}"/>
                                 <Button Style="{StaticResource TomeButton}" Content="+ Episode" Command="{Binding AddEpisodeCommand}"/>
-                                <Button Style="{StaticResource TomeButton}" Content="Delete" Command="{Binding DeleteCurrentCommand}"
+                                <Button Style="{StaticResource TomeButton}" Content="Delete page" Command="{Binding DeleteCurrentCommand}"
                                         ToolTip="Delete the page that's open"/>
                             </WrapPanel>
                         </StackPanel>
@@ -275,6 +275,16 @@
                                         Command="{Binding RefreshCommand}"
                                         Visibility="{Binding IsConnected, Converter={StaticResource BoolToVis}}"
                                         ToolTip="Save your changes and pick up everyone else's (F5)"/>
+                                <Button Style="{StaticResource TomeButton}" Content="{Binding DeletePageLabel}" Margin="0,0,8,0"
+                                        Command="{Binding DeleteCurrentCommand}" Foreground="{StaticResource RubricBrush}"
+                                        ToolTip="Delete this page. You'll be asked first.">
+                                    <Button.Visibility>
+                                        <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                            <Binding Path="IsEditing"/>
+                                            <Binding Path="DeletePageLabel" Converter="{StaticResource NotEmpty}"/>
+                                        </MultiBinding>
+                                    </Button.Visibility>
+                                </Button>
                                 <Button Command="{Binding ToggleEditCommand}"
                                         Visibility="{Binding CanEdit, Converter={StaticResource BoolToVis}}"
                                         ToolTip="Ctrl+E">

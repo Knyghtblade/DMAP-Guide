@@ -17,7 +17,10 @@
 
         <!-- Cover art -->
         <c:CoverArt ImagePath="{Binding CoverImage}"/>
-        <c:AddButton Text="Choose cover art…" Margin="0,8,0,0" Clicked="OnChooseCover"/>
+        <HorizontalStackLayout Spacing="6">
+            <c:AddButton Text="Choose cover art…" Margin="0,8,0,0" Clicked="OnChooseCover"/>
+            <c:AddButton Text="Remove" Margin="0,8,0,0" Clicked="OnRemoveCover"/>
+        </HorizontalStackLayout>
 
         <Label Style="{StaticResource Flourish}"/>
 

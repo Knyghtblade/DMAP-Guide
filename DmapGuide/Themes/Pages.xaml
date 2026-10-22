@@ -61,6 +61,7 @@
                             Content="Picture…"
                             Command="{Binding DataContext.ChoosePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"/>
+                    <Button Style="{StaticResource RemovePictureButton}" Margin="0,4,0,0" HorizontalAlignment="Center"/>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Margin="10,0,4,0">
@@ -158,6 +159,7 @@
                             Content="Picture…"
                             Command="{Binding DataContext.ChoosePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"/>
+                    <Button Style="{StaticResource RemovePictureButton}" Margin="22,4,0,0" HorizontalAlignment="Left"/>
                     <TextBlock Text="Drag to reposition" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
                                Foreground="{StaticResource InkFadedBrush}" Margin="2,6,0,0" Width="130" TextWrapping="Wrap" TextAlignment="Center">
                         <TextBlock.Style>
@@ -308,6 +310,7 @@
                             Content="Picture…"
                             Command="{Binding DataContext.ChoosePortraitCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                             CommandParameter="{Binding}"/>
+                    <Button Style="{StaticResource RemovePictureButton}" Margin="22,4,0,0" HorizontalAlignment="Left"/>
                     <TextBlock Text="Drag to reposition" FontFamily="{StaticResource BodyFont}" FontSize="13" FontStyle="Italic"
                                Foreground="{StaticResource InkFadedBrush}" Margin="2,6,0,0" Width="130" TextWrapping="Wrap" TextAlignment="Center">
                         <TextBlock.Style>

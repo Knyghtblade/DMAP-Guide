@@ -33,6 +33,7 @@ public partial class MainViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(IsOnSchedule))]
     [NotifyPropertyChangedFor(nameof(IsOnCast))]
     [NotifyPropertyChangedFor(nameof(IsOnSettings))]
+    [NotifyPropertyChangedFor(nameof(DeletePageLabel))]
     private object? _currentPage;
 
     // Which of the fixed pages is open (for highlighting its link in the menu).
@@ -72,6 +73,15 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>Adding and deleting pages.</summary>
     public bool CanChangePages => IsConnected && !IsReadOnly;
+
+    /// <summary>The Delete button on the open page while editing ("Delete episode"…), or "" when the page can't be deleted.</summary>
+    public string DeletePageLabel => CurrentPage switch
+    {
+        Season => "Delete season",
+        Campaign => "Delete campaign",
+        Episode => "Delete episode",
+        _ => ""
+    };
 
     public string UserName => _settings.UserName;
 
@@ -993,6 +1003,12 @@ public partial class MainViewModel : ObservableObject
     private async Task ChoosePortraitAsync(CastMember member)
     {
         if (await PickImageAsync() is string path) member.ImagePath = path;
+    }
+
+    [RelayCommand]
+    private void RemovePortrait(CastMember member)
+    {
+        if (IsEditing) member.ImagePath = "";
     }
 
     [RelayCommand]
