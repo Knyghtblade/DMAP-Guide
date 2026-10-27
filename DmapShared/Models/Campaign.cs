@@ -103,7 +103,8 @@ public class CastRosterPage : TreeNode
     /// <summary>Fill in each character's "Appears in" line and Cast page link (called when the page opens).</summary>
     public void RefreshAppearances()
     {
-        var people = Campaign.Season?.Show?.Cast ?? new();
+        var show = Campaign.Season?.Show;
+        var people = show == null ? [] : show.Cast.Concat(show.Guests).Concat(show.DungeonMasters).ToList();
         foreach (var member in Campaign.Characters)
         {
             member.Player = people.FirstOrDefault(p => CastMember.SameName(p.PlayerName, member.PlayerName));

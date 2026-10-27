@@ -327,6 +327,24 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task Guest_stars_link_to_the_characters_they_play()
+    {
+        using var server = new TestServer();
+        var (vm, _) = await Connected(server);
+        var campaign = vm.Data.AllCampaigns.First();
+        var character = new CastMember { PlayerName = "Alex Ward", CharacterName = "Lividity", IsGuest = true };
+        campaign.Characters.Add(character);
+        var alex = new CastMember { PlayerName = "Alex Ward" };
+        vm.Data.Guests.Add(alex);
+
+        await vm.ShowCastCommand.ExecuteAsync(null);
+        Assert.Same(character, Assert.Single(alex.Roles).Character);
+
+        await vm.OpenRosterCommand.ExecuteAsync(campaign);
+        Assert.Same(alex, character.Player);
+    }
+
+    [Fact]
     public void Air_date_platforms_are_ticked_on_and_off_and_keep_anything_typed_by_hand()
     {
         var air = new AirDate { Platform = "Netflix" };

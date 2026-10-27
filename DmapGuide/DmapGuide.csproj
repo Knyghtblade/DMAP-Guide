@@ -10,7 +10,7 @@
     <RootNamespace>DmapGuide</RootNamespace>
     <Product>DMAP Guide</Product>
     <!-- "Publish Shared App" raises the last number every time it builds the shared folder. -->
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
     <ApplicationIcon>Assets\dmap.ico</ApplicationIcon>
   </PropertyGroup>
 
