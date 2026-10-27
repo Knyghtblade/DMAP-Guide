@@ -229,6 +229,19 @@ public partial class CastMember : ObservableObject
     [property: JsonIgnore]
     private List<CharacterRole> _roles = new();
 
+    /// <summary>A Dungeon Master on the Cast page: the campaigns they run.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private List<Campaign> _runs = new();
+
+    /// <summary>
+    /// The line under a person on the app's Cast page, for what isn't already shown as links
+    /// (the characters they play and the campaigns they run are): a guest star's episodes.
+    /// </summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private string _otherAppearances = "";
+
     /// <summary>A character: the person on the Cast page who plays them (matched by name), if any.</summary>
     [ObservableProperty]
     [property: JsonIgnore]

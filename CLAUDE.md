@@ -33,6 +33,10 @@ Do the technical work; describe the result and what to do next. Anything written
   the exe when someone who saved changes closes it (shared folder only); Settings also has
   "Save a web copy…". Only the app writes it. OneDrive/SharePoint download HTML rather than show
   it, so readers open the downloaded file; a true "click a link" site would need Hasbro IT.
+- 1.0.7 (27 Oct): the app's Cast page shows "Runs" (campaign covers) and "Plays" (character
+  portraits, for everyone incl. guest stars) as links; the Characters page links "Played by" to
+  the Cast page. Also fixed a crash on every close with nothing to save (WPF `Close()` called
+  inside `Closing`); Windows' Application event log showed it for every version before 1.0.7.
 - Uncommitted on 27 Oct and not mine: someone's Mac build work (`DmapAndroid` Mac Catalyst files,
   `Build Mac App.command`, README.md lines). Left out of commits until its owner says it's ready.
 

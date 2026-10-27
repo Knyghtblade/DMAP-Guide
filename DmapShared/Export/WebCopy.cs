@@ -218,31 +218,35 @@ public static class WebCopy
         w.Open("cast", show, "Cast");
         w.Raw("""<p class="note">The people who make the show, across every campaign. Click a character to see them in their campaign.</p>""");
 
-        // Dungeon Masters: the campaigns they run. The cast: the characters they play. Guest stars: their episodes.
-        People(w, "Dungeon Masters", data.DungeonMasters, "No Dungeon Masters listed.", p =>
-            data.AllCampaigns.Where(c => SameName(c.DungeonMaster, p.PlayerName))
-                .Select(c => w.Chip("#" + Id(c), null, "⚔", string.IsNullOrWhiteSpace(c.Title) ? c.DisplayName : c.Title, $"Campaign {c.Number}")), "Runs");
-        People(w, "The Company", data.Cast, "No one on the cast list yet.", p =>
-            data.AllCampaigns.SelectMany(c => c.Characters
-                .Where(x => SameName(x.PlayerName, p.PlayerName) && !string.IsNullOrWhiteSpace(x.CharacterName))
-                .Select(x => w.Tile($"#{Id(c)}/{MemberId(x)}", x, x.CharacterName, string.IsNullOrWhiteSpace(c.Title) ? c.DisplayName : c.Title))), "Plays", "tiles");
+        // As the app's Cast page: the campaigns a Dungeon Master runs, the characters anyone
+        // plays (guest stars too), and the episodes a guest star is in.
+        People(w, "Dungeon Masters", data.DungeonMasters, "No Dungeon Masters listed.");
+        People(w, "The Company", data.Cast, "No one on the cast list yet.");
         People(w, "Guest Stars", data.Guests, "No guest stars listed.", p =>
             data.AllEpisodes.Where(e => e.GuestIds.Contains(p.Id))
-                .Select(e => w.Chip("#" + Id(e), null, "☾", e.DisplayName, e.Campaign?.DisplayName ?? "")), "Guests in");
+                .Select(e => w.Chip("#" + Id(e), null, "☾", e.DisplayName, e.Campaign?.DisplayName ?? "")));
         w.Close();
     }
 
     private static void People(Writer w, string title, IEnumerable<CastMember> people, string empty,
-        Func<CastMember, IEnumerable<string>> chips, string heading, string style = "")
+        Func<CastMember, IEnumerable<string>>? episodes = null)
     {
         w.Section(title);
         var list = people.ToList();
         if (list.Count == 0) w.Empty(empty);
         foreach (var p in list)
         {
-            var links = chips(p).ToList();
-            w.Card(p, p.PlayerName, p.CharacterSummary, p.CharacterDescription, links.Count > 0 ? null : p.Appearances,
-                extra: links.Count > 0 ? $"""<div class="label plays-label">{H(heading)}</div><div class="plays {style}">{string.Concat(links)}</div>""" : null);
+            string Row(string heading, string style, IEnumerable<string> links)
+            {
+                var all = links.ToList();
+                return all.Count == 0 ? "" : $"""<div class="label plays-label">{H(heading)}</div><div class="plays {style}">{string.Concat(all)}</div>""";
+            }
+            string extra =
+                Row("Runs", "tiles", p.Runs.Select(c => w.CampaignTile(c))) +
+                Row("Plays", "tiles", p.Roles.Select(r => w.Tile($"#{Id(r.Campaign)}/{MemberId(r.Character)}", r.Character, r.Character.CharacterName, r.CampaignName))) +
+                Row("Guests in", "", episodes?.Invoke(p) ?? []);
+            w.Card(p, p.PlayerName, p.CharacterSummary, p.CharacterDescription, extra.Length > 0 ? null : p.Appearances,
+                extra: extra.Length > 0 ? extra : null);
         }
     }
 
@@ -429,15 +433,19 @@ public static class WebCopy
         public string Tile(string href, CastMember character, string name, string sub) =>
             $"""<a class="tile" href="{href}"><span class="tile-pic">{Pic(character)}</span><b>{H(name)}</b><i>{H(sub)}</i></a>""";
 
+        /// <summary>A campaign a Dungeon Master runs: its cover art, title and number, opening its page.</summary>
+        public string CampaignTile(Campaign c)
+        {
+            string cover = Portrait(c.CoverImage) is string css ? $"""<i class="pic {css}"></i>""" : "<span>⚔</span>";
+            string title = string.IsNullOrWhiteSpace(c.Title) ? c.DisplayName : c.Title;
+            return $"""<a class="tile campaign" href="#{Id(c)}"><span class="tile-cover">{cover}</span><b>{H(title)}</b><i>Campaign {c.Number}</i></a>""";
+        }
+
         /// <summary>A person or character card with their portrait.</summary>
         public void Card(CastMember m, string name, string summary, string? bio, string? appearances,
             string? playedBy = null, bool small = false, bool guest = false, string? nameLink = null, string? extra = null)
         {
-            // A character's actor sits in a seal on the corner of the portrait, opening their Cast entry.
-            string seal = !string.IsNullOrWhiteSpace(playedBy) && Person(playedBy) is CastMember actor
-                ? $"""<a class="seal" href="#cast/{MemberId(actor)}" title="Played by {H(actor.PlayerName.Trim())}">{Pic(actor)}</a>"""
-                : "";
-            Raw($"""<div class="card{(small ? " small" : "")}" data-m="{MemberId(m)}"><div class="portrait-wrap"><div class="portrait">{Pic(m)}</div>{seal}</div><div class="who">""");
+            Raw($"""<div class="card{(small ? " small" : "")}" data-m="{MemberId(m)}"><div class="portrait">{Pic(m)}</div><div class="who">""");
             string badge = guest ? """ <span class="badge">Guest character</span>""" : "";
             string shown = H(string.IsNullOrWhiteSpace(name) ? "Unnamed" : name);
             if (nameLink != null) shown = $"""<a href="{nameLink}">{shown}</a>""";
@@ -622,11 +630,6 @@ public static class WebCopy
         .chip-text{display:flex;flex-direction:column;line-height:1.25;text-align:left}
         .chip-text b{font:700 14px Cinzel,serif;color:var(--rubric)}
         .chip-text i{font-size:14px;color:var(--faded)}
-        .portrait-wrap{position:relative;flex:none;align-self:flex-start}
-        .seal{position:absolute;right:-8px;bottom:-6px;width:54px;height:54px;border-radius:50%;overflow:hidden;border:2.5px solid var(--gold);
-          background:#EEDDB6;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:var(--gold);transition:transform .2s}
-        .seal:hover{transform:scale(1.12)}
-        .card.small .seal{width:38px;height:38px;right:-6px;bottom:-4px;border-width:2px}
         .plays-label{margin-top:14px}
         .plays.tiles{gap:14px 18px;margin-top:6px}
         .tile{display:flex;flex-direction:column;align-items:center;width:118px;text-align:center;text-decoration:none;color:var(--ink);transition:transform .2s}
@@ -636,6 +639,11 @@ public static class WebCopy
         .tile:hover .tile-pic{box-shadow:0 0 0 3px rgba(232,207,138,.8),0 6px 14px rgba(58,36,16,.3)}
         .tile b{font:700 14px/1.2 Cinzel,serif;color:var(--rubric);margin-top:6px}
         .tile i{font-size:13px;line-height:1.25;color:var(--faded)}
+        .tile.campaign{width:150px}
+        .tile-cover{width:132px;height:92px;border-radius:4px;overflow:hidden;border:3px solid var(--gold);background:rgba(135,106,69,.2);
+          display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:26px;box-shadow:0 3px 8px rgba(58,36,16,.25);transition:box-shadow .2s}
+        .tile:hover .tile-cover{box-shadow:0 0 0 3px rgba(232,207,138,.8),0 6px 14px rgba(58,36,16,.3)}
+        .tile-cover .pic{background-position:center}
         .card.flash{animation:flash 1.8s ease-out}
         @keyframes flash{0%,30%{box-shadow:0 0 0 3px var(--gold),0 0 24px rgba(201,162,74,.9);background:rgba(232,207,138,.45)}100%{box-shadow:none}}
         .played{color:var(--soft)}
@@ -720,7 +728,6 @@ public static class WebCopy
           .split{display:block}.cover-art{width:180px;margin:16px auto 0}
           .card{flex-direction:column;align-items:center;text-align:center}
           .plays{justify-content:center}
-          .portrait-wrap{align-self:center}
           .moment{flex-direction:column;gap:0}
           .cover{position:fixed;z-index:6}
           .door.back{width:22%}

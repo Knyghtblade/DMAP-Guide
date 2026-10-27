@@ -71,7 +71,10 @@ public partial class MainWindow : Window
         _closing = true;
         IsEnabled = false;
         await _vm.ShutdownAsync();
-        Close();
+
+        // With nothing to save, ShutdownAsync can finish before this Closing has: closing again
+        // from inside it makes WPF end the app with an error. Close once it has returned.
+        _ = Dispatcher.BeginInvoke(Close);
     }
 
     // The text box being typed in only pushes its value on losing focus;

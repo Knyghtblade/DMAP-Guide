@@ -63,7 +63,7 @@ public class WebCopyTests
         string person = $"#cast/m{sam.Id:N}";
         Assert.Contains($"""<a class="tile" href="{character}">""", html);        // Cast page gallery → the character
         Assert.Contains($"""<a class="who-link" href="{person}">""", html);       // "played by" → the person
-        Assert.Contains($"""<a class="seal" href="{person}" """.TrimEnd(), html);  // the actor's seal on the character's portrait
+        Assert.DoesNotContain("class=\"seal\"", html);                             // no second actor picture on the portrait
         Assert.Contains($"""<a href="{character}">Thrall &lt;the Bold&gt;</a>""", html); // episode → the full character card
         Assert.Contains($"""data-m="m{thrall.Id:N}" """.TrimEnd(), html);
         Assert.Contains($"""data-m="m{sam.Id:N}" """.TrimEnd(), html);
@@ -88,6 +88,29 @@ public class WebCopyTests
         Assert.Equal("World of Warcraft", role.CampaignName);
         Assert.Same(sam, thrall.Actor);
         Assert.Null(stranger.Actor);
+    }
+
+    [Fact]
+    public void Guest_stars_get_their_characters_and_dungeon_masters_their_campaigns()
+    {
+        var data = Guide();
+        var wow = data.AllCampaigns.Last();
+        wow.DungeonMaster = "Jasmine";
+        var jasmine = new CastMember { PlayerName = "Jasmine" };
+        data.DungeonMasters.Add(jasmine);
+        var alex = new CastMember { PlayerName = "Alex Ward" };           // on the Cast page as a guest star…
+        data.Guests.Add(alex);
+        var lividity = new CastMember { CharacterName = "Lividity", PlayerName = "Alex Ward", IsGuest = true };
+        wow.Characters.Add(lividity);                                      // …playing a guest character
+
+        string html = WebCopy.Build(data, "1.0.4", DateTime.Now, _ => null);
+
+        Assert.Same(lividity, Assert.Single(alex.Roles).Character);
+        Assert.Same(alex, lividity.Actor);
+        Assert.Same(wow, Assert.Single(jasmine.Runs));
+        Assert.Equal("", jasmine.OtherAppearances);                        // the app shows the campaigns as links instead
+        Assert.Contains($"""<a class="tile" href="#p{wow.Id:N}/m{lividity.Id:N}">""", html);
+        Assert.Contains($"""<a class="tile campaign" href="#p{wow.Id:N}">""", html);
     }
 
     [Fact]

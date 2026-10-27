@@ -154,30 +154,6 @@
                                           CanDrag="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}"/>
                         <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="3" IsHitTestVisible="False"/>
                         <Ellipse Stroke="{StaticResource InkSoftBrush}" StrokeThickness="0.8" Margin="5" Opacity="0.6" IsHitTestVisible="False"/>
-
-                        <!-- The actor, in a seal on the corner of the portrait: opens their Cast entry -->
-                        <Button Style="{StaticResource LinkButton}" Padding="0" Width="56" Height="56" Margin="0,0,-10,-8"
-                                HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                                Command="{Binding DataContext.ShowPersonCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                CommandParameter="{Binding Actor}"
-                                ToolTip="{Binding Actor.PlayerName}" ToolTipService.InitialShowDelay="200">
-                            <Button.Visibility>
-                                <MultiBinding Converter="{StaticResource AllTrueToVis}">
-                                    <Binding Path="Actor" Converter="{StaticResource NotNull}"/>
-                                    <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}" Converter="{StaticResource Not}"/>
-                                </MultiBinding>
-                            </Button.Visibility>
-                            <Grid Width="50" Height="50">
-                                <Ellipse Fill="#EEDDB6">
-                                    <Ellipse.Effect>
-                                        <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.45"/>
-                                    </Ellipse.Effect>
-                                </Ellipse>
-                                <ctl:PortraitView Source="{Binding Actor.ImagePath, Converter={StaticResource Image}, ConverterParameter=120}"
-                                                  OffsetX="{Binding Actor.ImageOffsetX, Mode=OneWay}" OffsetY="{Binding Actor.ImageOffsetY, Mode=OneWay}"/>
-                                <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="2.5"/>
-                            </Grid>
-                        </Button>
                     </Grid>
                     <Button Style="{StaticResource AddButton}" Margin="22,8,0,0" HorizontalAlignment="Left"
                             Content="Picture…"
@@ -391,12 +367,47 @@
                                  Tag="About them: background, other work, what they bring to the table…" FontSize="16"/>
                     </StackPanel>
 
-                    <!-- Dungeon Masters and guest stars: what they run or guest in. The cast: the gallery below instead. -->
-                    <Border Visibility="{Binding Roles.Count, Converter={StaticResource EmptyToCollapsed}, ConverterParameter=Invert}">
-                        <TextBlock Text="{Binding Appearances}" Style="{StaticResource Body}" FontSize="14" FontStyle="Italic"
-                                   Foreground="{StaticResource InkFadedBrush}" Margin="3,10,0,0"
-                                   Visibility="{Binding Appearances, Converter={StaticResource EmptyToCollapsed}}"/>
-                    </Border>
+                    <!-- Guest stars: the episodes they're in (what they run and play are the links below) -->
+                    <TextBlock Text="{Binding OtherAppearances}" Style="{StaticResource Body}" FontSize="14" FontStyle="Italic"
+                               Foreground="{StaticResource InkFadedBrush}" Margin="3,10,0,0"
+                               Visibility="{Binding OtherAppearances, Converter={StaticResource EmptyToCollapsed}}"/>
+
+                    <!-- Dungeon Masters: the campaigns they run, each opening its page -->
+                    <StackPanel Margin="0,14,0,0" Visibility="{Binding Runs.Count, Converter={StaticResource EmptyToCollapsed}}">
+                        <TextBlock Text="RUNS" Style="{StaticResource FieldLabel}"/>
+                        <ItemsControl ItemsSource="{Binding Runs}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type m:Campaign}">
+                                    <Button Style="{StaticResource LinkButton}" Width="150" Margin="0,6,10,0" HorizontalContentAlignment="Center"
+                                            Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" ToolTip="Open the campaign">
+                                        <StackPanel>
+                                            <Border Width="132" Height="92" CornerRadius="4" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3"
+                                                    Background="#33876A45" ClipToBounds="True">
+                                                <Grid>
+                                                    <TextBlock Text="⚔" FontSize="30" Foreground="{StaticResource InkFadedBrush}"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center" FontFamily="{StaticResource SymbolFont}"/>
+                                                    <Image Source="{Binding CoverImage, Converter={StaticResource Image}, ConverterParameter=300}"
+                                                           Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                </Grid>
+                                            </Border>
+                                            <TextBlock Text="{Binding Title}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold"
+                                                       FontSize="13" Foreground="{StaticResource RubricBrush}" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                            <TextBlock FontFamily="{StaticResource BodyFont}" FontStyle="Italic" FontSize="13"
+                                                       Foreground="{StaticResource InkFadedBrush}" TextAlignment="Center">
+                                                <Run Text="Campaign"/> <Run Text="{Binding Number, Mode=OneWay}"/>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
 
                     <!-- The characters they play: each opens its campaign's Characters page at them -->
                     <StackPanel Margin="0,14,0,0" Visibility="{Binding Roles.Count, Converter={StaticResource EmptyToCollapsed}}">

@@ -90,29 +90,37 @@ public partial class ShowData : ObservableObject
         static bool SameName(string a, string b) =>
             a.Trim().Length > 0 && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 
-        foreach (var person in Cast)
+        // Anyone on the Cast page can play a character: the cast, guest stars (often in a
+        // guest character), even a Dungeon Master.
+        foreach (var person in DungeonMasters.Concat(Cast).Concat(Guests))
         {
-            var roles = AllCampaigns
+            person.Roles = AllCampaigns
                 .SelectMany(c => c.Characters
                     .Where(x => SameName(x.PlayerName, person.PlayerName) && !string.IsNullOrWhiteSpace(x.CharacterName))
                     .Select(x => new CharacterRole(c, x)))
                 .ToList();
-            person.Roles = roles;
-            person.Appearances = roles.Count == 0 ? "" :
-                "Plays " + string.Join("; ", roles.Select(r => $"{r.Character.CharacterName.Trim()} in {r.Campaign.DisplayName}"));
+            person.Runs = DungeonMasters.Contains(person)
+                ? AllCampaigns.Where(c => SameName(c.DungeonMaster, person.PlayerName)).ToList()
+                : new List<Campaign>();
+            person.OtherAppearances = "";
         }
         LinkActors();
 
+        static string Plays(CastMember p) =>
+            string.Join("; ", p.Roles.Select(r => $"{r.Character.CharacterName.Trim()} in {r.Campaign.DisplayName}"));
+
+        foreach (var person in Cast)
+            person.Appearances = person.Roles.Count == 0 ? "" : "Plays " + Plays(person);
+
         foreach (var dm in DungeonMasters)
-        {
-            var runs = AllCampaigns.Where(c => SameName(c.DungeonMaster, dm.PlayerName)).Select(c => c.DisplayName).ToList();
-            dm.Appearances = runs.Count == 0 ? "" : "Runs " + string.Join("; ", runs);
-        }
+            dm.Appearances = dm.Runs.Count == 0 ? "" : "Runs " + string.Join("; ", dm.Runs.Select(c => c.DisplayName));
 
         foreach (var guest in Guests)
         {
             var eps = AllEpisodes.Where(e => e.GuestIds.Contains(guest.Id)).Select(e => e.Number.ToString()).ToList();
-            guest.Appearances = eps.Count == 0 ? "" : "Guest in episodes " + string.Join(", ", eps);
+            guest.OtherAppearances = eps.Count == 0 ? "" : "Guest in episodes " + string.Join(", ", eps);
+            guest.Appearances = string.Join(" · ", new[] { guest.OtherAppearances, guest.Roles.Count == 0 ? "" : "Plays " + Plays(guest) }
+                .Where(s => s.Length > 0));
         }
     }
 
