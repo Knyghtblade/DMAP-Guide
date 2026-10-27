@@ -60,6 +60,9 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Raised just before the page changes (the window snapshots it for the page-turn).</summary>
     public event Action? Navigating;
 
+    /// <summary>Raised after a link opens a page: the window scrolls to this person's or character's card.</summary>
+    public event Action<CastMember>? ShowCardRequested;
+
     public IPlatformServices Platform => _platform;
 
     /// <summary>Where the guide is kept, as shown to the user.</summary>
@@ -405,6 +408,10 @@ public partial class MainViewModel : ObservableObject
         {
             FinishCampaignEdit();
             _ = SaveAsync();
+
+            // Names may have changed: re-match the links between the Cast and Characters pages.
+            if (CurrentPage is CastRosterPage roster) roster.RefreshAppearances();
+            if (CurrentPage is CastPageViewModel cast) cast.RefreshAppearances();
         }
         _ = UpdateLockAsync();
     }
@@ -888,6 +895,24 @@ public partial class MainViewModel : ObservableObject
             _ => null
         };
         return campaign == null ? Task.CompletedTask : NavigateAsync(campaign.RosterPage);
+    }
+
+    /// <summary>From the Cast page: open the character's campaign Characters page, at their card.</summary>
+    [RelayCommand]
+    private async Task OpenCharacterAsync(CharacterRole? role)
+    {
+        if (role == null) return;
+        await NavigateAsync(role.Campaign.RosterPage);
+        ShowCardRequested?.Invoke(role.Character);
+    }
+
+    /// <summary>From a Characters page: open the Cast page at the person who plays the character.</summary>
+    [RelayCommand]
+    private async Task OpenCastMemberAsync(CastMember? person)
+    {
+        if (person == null) return;
+        await NavigateAsync(new CastPageViewModel(this));
+        ShowCardRequested?.Invoke(person);
     }
 
     /// <summary>Add a person to the Cast page: a "DungeonMaster", a "Guest", or (anything else) a cast member.</summary>

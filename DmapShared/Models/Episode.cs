@@ -224,9 +224,26 @@ public partial class CastMember : ObservableObject
     [property: JsonIgnore]
     private string _appearances = "";
 
+    /// <summary>Cast page: the characters this person plays, and in which campaigns (not saved).</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private List<CharacterRole> _roles = new();
+
+    /// <summary>Characters page: the person on the Cast page who plays this character, if listed there (not saved).</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private CastMember? _player;
+
     /// <summary>The picture finished downloading: redraw the portrait.</summary>
     public void RefreshImage() => OnPropertyChanged(nameof(ImagePath));
+
+    /// <summary>Names match ignoring case and spaces at either end (a blank name never matches).</summary>
+    public static bool SameName(string a, string b) =>
+        a.Trim().Length > 0 && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
 }
+
+/// <summary>A character a cast member plays, and the campaign it's in (a link on the Cast page).</summary>
+public record CharacterRole(CastMember Character, Campaign Campaign);
 
 /// <summary>A campaign character with a checkbox for "in this episode".</summary>
 public class CastChoice

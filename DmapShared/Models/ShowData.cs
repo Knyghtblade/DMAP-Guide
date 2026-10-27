@@ -81,23 +81,21 @@ public partial class ShowData : ObservableObject
     }
 
     /// <summary>
-    /// Fill in each person's line on the Cast page: what a cast member plays (matching the
-    /// campaigns' character lists by name), which campaigns a Dungeon Master runs, and which
+    /// Fill in each person's line on the Cast page: the characters a cast member plays (matching
+    /// the campaigns' character lists by name), which campaigns a Dungeon Master runs, and which
     /// episodes a guest star is in. Called when the Cast page opens.
     /// </summary>
     public void RefreshCastAppearances()
     {
-        static bool SameName(string a, string b) =>
-            a.Trim().Length > 0 && string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+        static bool SameName(string a, string b) => CastMember.SameName(a, b);
 
         foreach (var person in Cast)
         {
-            var roles = AllCampaigns
+            person.Roles = AllCampaigns
                 .SelectMany(c => c.Characters
                     .Where(x => SameName(x.PlayerName, person.PlayerName) && !string.IsNullOrWhiteSpace(x.CharacterName))
-                    .Select(x => $"{x.CharacterName.Trim()} in {c.DisplayName}"))
+                    .Select(x => new CharacterRole(x, c)))
                 .ToList();
-            person.Appearances = roles.Count == 0 ? "" : "Plays " + string.Join("; ", roles);
         }
 
         foreach (var dm in DungeonMasters)

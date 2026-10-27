@@ -182,8 +182,55 @@
 
                     <StackPanel Margin="0,10,0,0">
                         <TextBlock Text="PLAYED BY" Style="{StaticResource FieldLabel}"/>
-                        <TextBox Style="{StaticResource InkBox}" Text="{Binding PlayerName}" Tag="Cast member's real name"
-                                 FontWeight="SemiBold"/>
+                        <!-- When reading, someone on the Cast page shows as a link to their card there -->
+                        <Border>
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="False"/>
+                                                <Condition Binding="{Binding Player, Converter={StaticResource EmptyToCollapsed}}" Value="Visible"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Button Style="{StaticResource LinkButton}" HorizontalAlignment="Left" Margin="-4,2,0,0"
+                                    ToolTip="Open them on the Cast page"
+                                    Command="{Binding DataContext.OpenCastMemberCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                    CommandParameter="{Binding Player}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Grid Width="44" Height="44" Margin="0,0,10,0">
+                                        <Ellipse Fill="#33876A45"/>
+                                        <TextBlock Text="✦" FontSize="16" Foreground="{StaticResource InkFadedBrush}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   FontFamily="{StaticResource SymbolFont}"/>
+                                        <ctl:PortraitView Source="{Binding Player.ImagePath, Converter={StaticResource Image}, ConverterParameter=140}"
+                                                          OffsetX="{Binding Player.ImageOffsetX, Mode=OneWay}" OffsetY="{Binding Player.ImageOffsetY, Mode=OneWay}"/>
+                                        <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5"/>
+                                    </Grid>
+                                    <TextBlock Text="{Binding Player.PlayerName}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </Border>
+                        <TextBox Text="{Binding PlayerName}" Tag="Cast member's real name" FontWeight="SemiBold">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" BasedOn="{StaticResource InkBox}">
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding DataContext.IsEditing, RelativeSource={RelativeSource AncestorType=Window}}" Value="False"/>
+                                                <Condition Binding="{Binding Player, Converter={StaticResource EmptyToCollapsed}}" Value="Visible"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
                     </StackPanel>
 
                     <!-- Guest character: a tick box when editing, a badge when reading -->
@@ -281,6 +328,33 @@
     </DataTemplate>
 
     <!-- ============================================================
+         ROLE CHIP (Cast page): a character someone plays and its campaign.
+         Clicking opens that campaign's Characters page at the character.
+    ============================================================ -->
+    <DataTemplate x:Key="RoleChip" DataType="{x:Type m:CharacterRole}">
+        <Button Style="{StaticResource LinkButton}" Margin="0,0,10,4" ToolTip="Open this character on the campaign's Characters page"
+                Command="{Binding DataContext.OpenCharacterCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                CommandParameter="{Binding}">
+            <StackPanel Orientation="Horizontal">
+                <Grid Width="56" Height="56" Margin="0,0,10,0">
+                    <Ellipse Fill="#33876A45"/>
+                    <TextBlock Text="✦" FontSize="20" Foreground="{StaticResource InkFadedBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               FontFamily="{StaticResource SymbolFont}"/>
+                    <ctl:PortraitView Source="{Binding Character.ImagePath, Converter={StaticResource Image}, ConverterParameter=160}"
+                                      OffsetX="{Binding Character.ImageOffsetX, Mode=OneWay}" OffsetY="{Binding Character.ImageOffsetY, Mode=OneWay}"/>
+                    <Ellipse Stroke="{StaticResource GoldBrush}" StrokeThickness="2"/>
+                </Grid>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Character.CharacterName}" FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15"
+                               Foreground="{StaticResource RubricBrush}"/>
+                    <TextBlock Text="{Binding Campaign.DisplayName}" FontSize="14" FontStyle="Italic" Foreground="{StaticResource InkFadedBrush}"/>
+                </StackPanel>
+            </StackPanel>
+        </Button>
+    </DataTemplate>
+
+    <!-- ============================================================
          CAST PAGE (the show's real people, across every campaign)
     ============================================================ -->
     <DataTemplate x:Key="PersonCard" DataType="{x:Type m:CastMember}">
@@ -339,6 +413,13 @@
                     <TextBlock Text="{Binding Appearances}" Style="{StaticResource Body}" FontSize="14" FontStyle="Italic"
                                Foreground="{StaticResource InkFadedBrush}" Margin="3,10,0,0"
                                Visibility="{Binding Appearances, Converter={StaticResource EmptyToCollapsed}}"/>
+
+                    <!-- The characters they play: each opens that campaign's Characters page -->
+                    <StackPanel Margin="0,12,0,0" Visibility="{Binding Roles.Count, Converter={StaticResource EmptyToCollapsed}}">
+                        <TextBlock Text="PLAYS" Style="{StaticResource FieldLabel}"/>
+                        <ItemsControl ItemsSource="{Binding Roles}" ItemTemplate="{StaticResource RoleChip}"
+                                      ItemsPanel="{StaticResource WrapPanelTemplate}" Margin="-6,2,0,0"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <Button Grid.Column="2" Style="{StaticResource RemoveButton}" ToolTip="Remove from the cast"

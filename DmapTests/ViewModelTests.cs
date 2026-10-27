@@ -293,6 +293,40 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task Cast_page_and_characters_pages_link_to_each_other()
+    {
+        using var server = new TestServer();
+        var (vm, _) = await Connected(server);
+        var campaign = vm.Data.AllCampaigns.First();
+        var character = new CastMember { PlayerName = "Sam ", CharacterName = "Thorn" };
+        campaign.Characters.Add(character);
+
+        var shown = new List<CastMember>();
+        vm.ShowCardRequested += shown.Add;
+
+        await vm.ShowCastCommand.ExecuteAsync(null);
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        vm.AddCastMemberCommand.Execute("Cast");
+        var sam = vm.Data.Cast[0];
+        sam.PlayerName = "sam";
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+
+        // The Cast page lists the character, and clicking it opens the campaign's Characters page there.
+        var role = Assert.Single(sam.Roles);
+        Assert.Same(character, role.Character);
+        Assert.Same(campaign, role.Campaign);
+        await vm.OpenCharacterCommand.ExecuteAsync(role);
+        Assert.Same(campaign.RosterPage, vm.CurrentPage);
+        Assert.Same(character, shown.Last());
+
+        // ...and the character's "played by" leads back to the person on the Cast page.
+        Assert.Same(sam, character.Player);
+        await vm.OpenCastMemberCommand.ExecuteAsync(character.Player);
+        Assert.IsType<CastPageViewModel>(vm.CurrentPage);
+        Assert.Same(sam, shown.Last());
+    }
+
+    [Fact]
     public void Air_date_platforms_are_ticked_on_and_off_and_keep_anything_typed_by_hand()
     {
         var air = new AirDate { Platform = "Netflix" };

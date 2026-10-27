@@ -100,11 +100,13 @@ public class CastRosterPage : TreeNode
     public override string DisplayName => "Characters";
     public override TreeNode? ParentNode => Campaign;
 
-    /// <summary>Fill in each character's "Appears in" line (called when the page opens).</summary>
+    /// <summary>Fill in each character's "Appears in" line and Cast page link (called when the page opens).</summary>
     public void RefreshAppearances()
     {
+        var people = Campaign.Season?.Show?.Cast ?? new();
         foreach (var member in Campaign.Characters)
         {
+            member.Player = people.FirstOrDefault(p => CastMember.SameName(p.PlayerName, member.PlayerName));
             var eps = Campaign.Episodes.Where(e => e.CastIds.Contains(member.Id)).Select(e => e.Number.ToString()).ToList();
             member.Appearances = eps.Count == 0 ? "Not in any episodes yet" : "Appears in episodes " + string.Join(", ", eps);
         }

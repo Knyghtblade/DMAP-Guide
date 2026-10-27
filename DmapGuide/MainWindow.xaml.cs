@@ -49,6 +49,7 @@ public partial class MainWindow : Window
 
         _vm.Navigating += SnapshotPage;
         _vm.PropertyChanged += OnViewModelChanged;
+        _vm.ShowCardRequested += ShowCard;
 
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -149,6 +150,37 @@ public partial class MainWindow : Window
     {
         PageScroller.ScrollToVerticalOffset(PageScroller.VerticalOffset - e.Delta * 0.6);
         e.Handled = true;
+    }
+
+    // A link to a person or character opened the page: once it's laid out, scroll their
+    // card to the top and let it glow gold for a moment so it's easy to spot.
+    private void ShowCard(DmapShared.Models.CastMember member) =>
+        Dispatcher.BeginInvoke(() =>
+        {
+            var card = FindCard(PageContent, member);
+            if (card == null) return;
+
+            var top = card.TransformToAncestor(PageScroller).Transform(new Point(0, 0)).Y;
+            PageScroller.ScrollToVerticalOffset(Math.Max(0, PageScroller.VerticalOffset + top - 8));
+
+            var gold = TryFindResource("GoldBrush") is SolidColorBrush b ? b.Color : Colors.Goldenrod;
+            var glow = new System.Windows.Media.Effects.DropShadowEffect { Color = gold, BlurRadius = 28, ShadowDepth = 0 };
+            card.Effect = glow;
+            var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(1800)) { BeginTime = TimeSpan.FromMilliseconds(700) };
+            fade.Completed += (_, _) => { if (card.Effect == glow) card.Effect = null; };
+            glow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, fade);
+        }, DispatcherPriority.Loaded);
+
+    // The outermost element showing this person or character: their card in the page's list.
+    private static FrameworkElement? FindCard(DependencyObject parent, object item)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is FrameworkElement fe && ReferenceEquals(fe.DataContext, item)) return fe;
+            if (FindCard(child, item) is FrameworkElement found) return found;
+        }
+        return null;
     }
 
     // ============================================================
