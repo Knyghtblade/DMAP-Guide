@@ -224,8 +224,29 @@ public partial class CastMember : ObservableObject
     [property: JsonIgnore]
     private string _appearances = "";
 
+    /// <summary>A person on the Cast page: the characters they play, across every campaign.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private List<CharacterRole> _roles = new();
+
+    /// <summary>A character: the person on the Cast page who plays them (matched by name), if any.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private CastMember? _actor;
+
+    /// <summary>Set for a moment when a link opens the page this card is on, so the page can point at it.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _isPointedAt;
+
     /// <summary>The picture finished downloading: redraw the portrait.</summary>
     public void RefreshImage() => OnPropertyChanged(nameof(ImagePath));
+}
+
+/// <summary>A character a person plays, and the campaign it's in (the Cast page's "Plays" gallery).</summary>
+public record CharacterRole(Campaign Campaign, CastMember Character)
+{
+    public string CampaignName => string.IsNullOrWhiteSpace(Campaign.Title) ? Campaign.DisplayName : Campaign.Title;
 }
 
 /// <summary>A campaign character with a checkbox for "in this episode".</summary>

@@ -70,6 +70,27 @@ public class WebCopyTests
     }
 
     [Fact]
+    public void The_cast_page_knows_who_plays_whom_for_the_app_pages_too()
+    {
+        var data = Guide();
+        var sam = new CastMember { PlayerName = "Sam" };
+        data.Cast.Add(sam);
+        var wow = data.AllCampaigns.Last();
+        var thrall = wow.Characters.Single();
+        var stranger = new CastMember { CharacterName = "Nobody", PlayerName = "Not on the cast page" };
+        wow.Characters.Add(stranger);
+
+        data.RefreshCastAppearances();
+
+        var role = Assert.Single(sam.Roles);
+        Assert.Same(thrall, role.Character);
+        Assert.Same(wow, role.Campaign);
+        Assert.Equal("World of Warcraft", role.CampaignName);
+        Assert.Same(sam, thrall.Actor);
+        Assert.Null(stranger.Actor);
+    }
+
+    [Fact]
     public void Only_web_addresses_become_watch_links()
     {
         string html = WebCopy.Build(Guide(), "1.0.4", DateTime.Now, _ => null);

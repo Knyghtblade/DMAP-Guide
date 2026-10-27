@@ -95,10 +95,13 @@ public partial class ShowData : ObservableObject
             var roles = AllCampaigns
                 .SelectMany(c => c.Characters
                     .Where(x => SameName(x.PlayerName, person.PlayerName) && !string.IsNullOrWhiteSpace(x.CharacterName))
-                    .Select(x => $"{x.CharacterName.Trim()} in {c.DisplayName}"))
+                    .Select(x => new CharacterRole(c, x)))
                 .ToList();
-            person.Appearances = roles.Count == 0 ? "" : "Plays " + string.Join("; ", roles);
+            person.Roles = roles;
+            person.Appearances = roles.Count == 0 ? "" :
+                "Plays " + string.Join("; ", roles.Select(r => $"{r.Character.CharacterName.Trim()} in {r.Campaign.DisplayName}"));
         }
+        LinkActors();
 
         foreach (var dm in DungeonMasters)
         {
@@ -111,6 +114,19 @@ public partial class ShowData : ObservableObject
             var eps = AllEpisodes.Where(e => e.GuestIds.Contains(guest.Id)).Select(e => e.Number.ToString()).ToList();
             guest.Appearances = eps.Count == 0 ? "" : "Guest in episodes " + string.Join(", ", eps);
         }
+    }
+
+    /// <summary>
+    /// Point each campaign character at the person on the Cast page who plays them (matching
+    /// "played by" to their name), so character cards can show the actor and open their entry.
+    /// </summary>
+    public void LinkActors()
+    {
+        var people = Cast.Concat(DungeonMasters).Concat(Guests).ToList();
+        foreach (var character in AllCampaigns.SelectMany(c => c.Characters))
+            character.Actor = string.IsNullOrWhiteSpace(character.PlayerName)
+                ? null
+                : people.FirstOrDefault(p => string.Equals(p.PlayerName.Trim(), character.PlayerName.Trim(), StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Pictures finished downloading: redraw every cover and portrait.</summary>

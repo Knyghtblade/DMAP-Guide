@@ -49,6 +49,7 @@ public partial class MainWindow : Window
 
         _vm.Navigating += SnapshotPage;
         _vm.PropertyChanged += OnViewModelChanged;
+        _vm.PointingAt += ScrollToCard;
 
         Loaded += OnLoaded;
         Closing += OnClosing;
@@ -142,6 +143,27 @@ public partial class MainWindow : Window
         double scale = Math.Min(h / DesignHeight, w / DesignWidth);
         BookScale.ScaleX = BookScale.ScaleY = scale;
         Book.Width = Math.Min(w / scale, WidestBook);
+    }
+
+    // A link opened the page at a person or character (a "Plays" portrait, an actor's seal):
+    // once the page is drawn, scroll their card to the middle of the page.
+    private void ScrollToCard(DmapShared.Models.CastMember member) =>
+        Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            if (FindCard(PageContent, member) is not FrameworkElement card) return;
+            double top = card.TranslatePoint(new Point(0, 0), PageContent).Y;
+            PageScroller.ScrollToVerticalOffset(Math.Max(0, top - (PageScroller.ViewportHeight - card.ActualHeight) / 2));
+        });
+
+    private static FrameworkElement? FindCard(DependencyObject parent, object member)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is ContentPresenter { Content: var content } item && ReferenceEquals(content, member)) return item;
+            if (FindCard(child, member) is FrameworkElement found) return found;
+        }
+        return null;
     }
 
     // Text boxes on the page swallow the mouse wheel; scroll the page instead.

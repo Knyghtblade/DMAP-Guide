@@ -51,6 +51,21 @@ public class NotEmptyConverter : IValueConverter
     public object ConvertBack(object value, Type t, object? p, CultureInfo c) => throw new NotSupportedException();
 }
 
+/// <summary>True when there is something (e.g. a character's actor on the Cast page). "Invert" flips it.</summary>
+public class NotNullConverter : IValueConverter
+{
+    public object Convert(object value, Type t, object? p, CultureInfo c) => (value != null) != (p as string == "Invert");
+    public object ConvertBack(object value, Type t, object? p, CultureInfo c) => throw new NotSupportedException();
+}
+
+/// <summary>Visible when any value is true (for "editing, OR there's no link to show instead").</summary>
+public class AnyTrueToVisibilityConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type t, object? p, CultureInfo c) =>
+        values.Any(v => v is bool b && b) ? Visibility.Visible : Visibility.Collapsed;
+    public object[] ConvertBack(object value, Type[] t, object? p, CultureInfo c) => throw new NotSupportedException();
+}
+
 /// <summary>Visible only when every value is true (for "in edit mode AND has a picture").</summary>
 public class AllTrueToVisibilityConverter : IMultiValueConverter
 {

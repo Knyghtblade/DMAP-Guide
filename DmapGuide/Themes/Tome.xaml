@@ -85,6 +85,8 @@
     <conv:InverseBoolConverter x:Key="Not"/>
     <conv:EmptyToCollapsedConverter x:Key="EmptyToCollapsed"/>
     <conv:NotEmptyConverter x:Key="NotEmpty"/>
+    <conv:NotNullConverter x:Key="NotNull"/>
+    <conv:AnyTrueToVisibilityConverter x:Key="AnyTrueToVis"/>
     <conv:AllTrueToVisibilityConverter x:Key="AllTrueToVis"/>
     <conv:DateTextConverter x:Key="DateText"/>
     <conv:ImageConverter x:Key="Image"/>
@@ -447,6 +449,22 @@
         <Setter Property="CornerRadius" Value="6"/>
         <Setter Property="Padding" Value="12"/>
         <Setter Property="Margin" Value="0,0,12,12"/>
+    </Style>
+
+    <!-- A person's or character's card: glows gold for a moment when a link opens the page at it -->
+    <Style x:Key="PointableCard" TargetType="Border" BasedOn="{StaticResource Card}">
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding IsPointedAt}" Value="True">
+                <Setter Property="BorderBrush" Value="{StaticResource GoldBrush}"/>
+                <Setter Property="BorderThickness" Value="2"/>
+                <Setter Property="Background" Value="#55E8CF8A"/>
+                <Setter Property="Effect">
+                    <Setter.Value>
+                        <DropShadowEffect Color="#C9A24A" BlurRadius="22" ShadowDepth="0" Opacity="0.9"/>
+                    </Setter.Value>
+                </Setter>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <!-- ============================================================

@@ -750,7 +750,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (!CanChangePages) return;
         int number = Data.Seasons.Select(s => s.Number).DefaultIfEmpty(0).Max() + 1;
-        var season = new Season { Number = number, IsExpanded = true };
+        var season = new Season { Number = number, IsExpanded = true, Show = Data };
         await SaveAsync();
         Data.Seasons.Add(season);
         await SaveAsync();
@@ -893,9 +893,9 @@ public partial class MainViewModel : ObservableObject
         campaign.RosterPage.RefreshAppearances();
     }
 
-    /// <summary>Open a campaign's Characters page: given the campaign, or one of its characters.</summary>
+    /// <summary>Open a campaign's Characters page: given the campaign, or one of its characters (then point at them).</summary>
     [RelayCommand]
-    private Task OpenRosterAsync(object? target)
+    private async Task OpenRosterAsync(object? target)
     {
         var campaign = target switch
         {
@@ -903,7 +903,30 @@ public partial class MainViewModel : ObservableObject
             CastMember m => Data.AllCampaigns.FirstOrDefault(c => c.Characters.Contains(m)),
             _ => null
         };
-        return campaign == null ? Task.CompletedTask : NavigateAsync(campaign.RosterPage);
+        if (campaign == null) return;
+        await NavigateAsync(campaign.RosterPage);
+        if (target is CastMember character) _ = PointAtAsync(character);
+    }
+
+    /// <summary>Open the Cast page at this person (a character's actor).</summary>
+    [RelayCommand]
+    private async Task ShowPersonAsync(CastMember? person)
+    {
+        if (person == null) return;
+        await NavigateAsync(new CastPageViewModel(this));
+        _ = PointAtAsync(person);
+    }
+
+    /// <summary>Raised when a link has opened a page at a particular person or character, so the window can scroll to them.</summary>
+    public event Action<CastMember>? PointingAt;
+
+    // Their card glows for a moment, so the eye finds it.
+    private async Task PointAtAsync(CastMember member)
+    {
+        member.IsPointedAt = true;
+        PointingAt?.Invoke(member);
+        await Task.Delay(1800);
+        member.IsPointedAt = false;
     }
 
     /// <summary>Add a person to the Cast page: a "DungeonMaster", a "Guest", or (anything else) a cast member.</summary>
