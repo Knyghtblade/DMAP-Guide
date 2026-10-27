@@ -61,8 +61,9 @@ public class WebCopyTests
 
         string character = $"#p{wow.Id:N}/m{thrall.Id:N}";
         string person = $"#cast/m{sam.Id:N}";
-        Assert.Contains($"""<a class="chip" href="{character}">""", html);        // Cast page → the character
+        Assert.Contains($"""<a class="tile" href="{character}">""", html);        // Cast page gallery → the character
         Assert.Contains($"""<a class="who-link" href="{person}">""", html);       // "played by" → the person
+        Assert.Contains($"""<a class="seal" href="{person}" """.TrimEnd(), html);  // the actor's seal on the character's portrait
         Assert.Contains($"""<a href="{character}">Thrall &lt;the Bold&gt;</a>""", html); // episode → the full character card
         Assert.Contains($"""data-m="m{thrall.Id:N}" """.TrimEnd(), html);
         Assert.Contains($"""data-m="m{sam.Id:N}" """.TrimEnd(), html);
