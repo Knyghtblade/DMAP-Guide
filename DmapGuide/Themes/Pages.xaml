@@ -1210,6 +1210,14 @@
                         ToolTip="Move the guide to a shared folder (e.g. OneDrive) so the team can use it, or open one that's already there"/>
             </StackPanel>
 
+            <StackPanel Visibility="{Binding CanSaveWebCopy, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="Web Copy" Style="{StaticResource SectionHeader}" Margin="0,22,0,8"/>
+                <TextBlock Style="{StaticResource EmptyNote}" TextWrapping="Wrap"
+                           Text="Save the whole guide as one web page that anyone can open in a browser, on a PC, a Mac or a phone, without this app. It's read-only and shows the guide as it is when you save it."/>
+                <Button Style="{StaticResource TomeButton}" Content="Save a web copy…" HorizontalAlignment="Left" Margin="0,8,0,0"
+                        Command="{Binding SaveWebCopyCommand}" IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"/>
+            </StackPanel>
+
             <TextBlock Style="{StaticResource Body}" FontSize="16" Foreground="{StaticResource RubricBrush}" Margin="2,14,0,0"
                        Text="{Binding Problem}" Visibility="{Binding Problem, Converter={StaticResource EmptyToCollapsed}}"/>
 

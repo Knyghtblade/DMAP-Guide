@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace DmapGuide.Services;
@@ -43,6 +44,55 @@ public class WpfPlatform : IPlatformServices
     {
         var dlg = new OpenFolderDialog { Title = title, InitialDirectory = startIn ?? "" };
         return Task.FromResult(dlg.ShowDialog(Application.Current.MainWindow) == true ? dlg.FolderName : null);
+    }
+
+    public bool SupportsWebCopy => true;
+
+    public Task<string?> PickSaveFileAsync(string title, string fileName)
+    {
+        var dlg = new SaveFileDialog
+        {
+            Title = title,
+            FileName = fileName,
+            Filter = "Web page|*.html",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+        };
+        return Task.FromResult(dlg.ShowDialog(Application.Current.MainWindow) == true ? dlg.FileName : null);
+    }
+
+    /// <summary>The picture scaled down so its longer side is at most <paramref name="maxSize"/>, as a JPEG data: address.</summary>
+    public string? PictureForWeb(string file, int maxSize)
+    {
+        try
+        {
+            var decoder = BitmapDecoder.Create(new Uri(file), BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.OnLoad);
+            BitmapSource frame = decoder.Frames[0];
+            double scale = Math.Min(1.0, (double)maxSize / Math.Max(frame.PixelWidth, frame.PixelHeight));
+            BitmapSource small = scale < 1 ? new TransformedBitmap(frame, new ScaleTransform(scale, scale)) : frame;
+
+            // Photos as JPEG (small); pictures that really have see-through parts as PNG, which keeps them.
+            bool seeThrough = HasSeeThroughParts(small);
+            BitmapEncoder encoder = seeThrough ? new PngBitmapEncoder() : new JpegBitmapEncoder { QualityLevel = 82 };
+            encoder.Frames.Add(BitmapFrame.Create(small));
+            using var stream = new MemoryStream();
+            encoder.Save(stream);
+            return $"data:image/{(seeThrough ? "png" : "jpeg")};base64," + Convert.ToBase64String(stream.ToArray());
+        }
+        catch
+        {
+            return null; // left out of the web copy, like a missing picture in the app
+        }
+    }
+
+    // Many pictures are saved with room for see-through parts but don't use it.
+    private static bool HasSeeThroughParts(BitmapSource picture)
+    {
+        var bgra = new FormatConvertedBitmap(picture, PixelFormats.Bgra32, null, 0);
+        var pixels = new byte[bgra.PixelWidth * bgra.PixelHeight * 4];
+        bgra.CopyPixels(pixels, bgra.PixelWidth * 4, 0);
+        for (int i = 3; i < pixels.Length; i += 4)
+            if (pixels[i] < 250) return true;
+        return false;
     }
 
     public void BeginInvoke(Action action) => Application.Current?.Dispatcher.BeginInvoke(action);

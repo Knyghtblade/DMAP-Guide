@@ -15,4 +15,10 @@
   <ItemGroup>
     <InternalsVisibleTo Include="DmapTests" />
   </ItemGroup>
+
+  <!-- The tome's artwork for the web copy: the app's own logo, and the dragon-scale binding made small. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\DmapGuide\Assets\dmap-logo.png" LogicalName="WebCopy.logo.png" />
+    <EmbeddedResource Include="Export\Art\dragon-scales.jpg" LogicalName="WebCopy.dragon-scales.jpg" />
+  </ItemGroup>
 </Project>

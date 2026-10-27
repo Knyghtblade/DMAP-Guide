@@ -19,14 +19,22 @@ Do the technical work; describe the result and what to do next. Anything written
 `C:\Users\PaulE\OneDrive - Hasbro Inc\DMAP Guide\Dungeon Masters Production Guide\`
 (the shared folder is the outer `DMAP Guide`; the app and `guide` folder are inside the inner one).
 
-## Open problem (as of 19 Oct 2026)
-Colleagues who open the app can't see Paul's changes and he can't see theirs. Paul's side is
-verified healthy (OneDrive synced, pinned, no conflicts). Every failure so far traced to the
-colleague running a copy of the exe that isn't inside a OneDrive-synced folder: a download from
-the OneDrive website, or the whole folder downloaded/unzipped. The app now refuses to open in
-those cases with a page that says what to do. Next step: a fresh colleague follows READ ME.txt
-with version 1.0.1 or later; if they get a refusal page, they are on a copy; if the app opens,
-their Settings "Kept in" path must contain "OneDrive - Hasbro Inc" and end in `\guide`.
+## Status (as of 22 Oct 2026)
+- Sharing works: the team is editing the shared guide and sees each other's changes (Paul, 22 Oct).
+  Earlier failures were all colleagues running a copy of the exe outside a OneDrive-synced folder;
+  the app now refuses to open in that case with a page saying what to do.
+- 1.0.3 (shipped, Paul confirmed it works): every addable thing can be deleted. While editing, the
+  page header shows "Delete episode/campaign/season"; people, characters, key moments and air
+  dates have a ✕; portraits have "Remove picture"; cover art has "Remove".
+- The phone-app half of 1.0.3 is unbuilt: the PC used on 22 Oct has no `maui-android` workload.
+- 1.0.4 (27 Oct): the **web copy**, a read-only single HTML file of the whole guide that looks and
+  moves like the app (cover doors, sparkles, page turns, candlelight; cast ↔ character links).
+  Built by `DmapShared\Export\WebCopy.cs`. The app rewrites `DMAP Guide (web copy).html` beside
+  the exe when someone who saved changes closes it (shared folder only); Settings also has
+  "Save a web copy…". Only the app writes it. OneDrive/SharePoint download HTML rather than show
+  it, so readers open the downloaded file; a true "click a link" site would need Hasbro IT.
+- Uncommitted on 27 Oct and not mine: someone's Mac build work (`DmapAndroid` Mac Catalyst files,
+  `Build Mac App.command`, README.md lines). Left out of commits until its owner says it's ready.
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe

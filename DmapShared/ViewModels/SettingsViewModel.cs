@@ -80,6 +80,23 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    public bool CanSaveWebCopy => Main.Platform.SupportsWebCopy;
+
+    [RelayCommand]
+    private async Task SaveWebCopyAsync()
+    {
+        Problem = "";
+        IsWorking = true;
+        try
+        {
+            await Main.SaveWebCopyAsync();
+        }
+        finally
+        {
+            IsWorking = false;
+        }
+    }
+
     [RelayCommand]
     private async Task ChooseFolderAsync()
     {

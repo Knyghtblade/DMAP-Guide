@@ -47,6 +47,17 @@ save your changes and pick up everyone else's straight away.
 To check you are on the shared guide, open Settings. "Kept in" should show a
 path inside OneDrive that ends in "DMAP Guide\guide".
 
+NO APP? READ IT IN A WEB BROWSER
+--------------------------------
+"DMAP Guide (web copy).html" in this folder is the whole guide as a web page.
+It opens in any web browser, on a PC, a Mac or a phone, with nothing to install
+and no OneDrive set-up: open the folder on the OneDrive website and click it
+(if it downloads instead of opening, open the downloaded file).
+
+It is read-only. Changes are only made in the app. The web copy is brought up
+to date whenever someone who made changes closes the app, and its front page
+says when it was last updated.
+
 WHICH VERSION AM I ON?
 ----------------------
 The version number is in the title bar of the window and at the bottom of the

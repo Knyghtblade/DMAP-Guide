@@ -82,6 +82,35 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task Closing_the_shared_app_after_changing_the_guide_updates_the_web_copy_beside_it()
+    {
+        var appFolder = TempFolder.Create("shared");
+        string guide = Path.Combine(appFolder, "guide");
+        Directory.CreateDirectory(guide);
+        string webCopy = Path.Combine(appFolder, MainViewModel.SharedWebCopyName);
+        MainViewModel Open() => new(new FakePlatform { SupportsServer = false, SupportsWebCopy = true },
+            new FakeSettings(new GuideSettings { UserName = "Alex" })) { RequiredFolder = guide };
+
+        // Opening and closing without changing anything leaves it alone.
+        var reader = Open();
+        await reader.StartAsync();
+        await reader.ShutdownAsync();
+        Assert.False(File.Exists(webCopy));
+
+        // A change, then closing: the web copy is written beside the app, with the change in it.
+        var editor = Open();
+        await editor.StartAsync();
+        await editor.AddSeasonCommand.ExecuteAsync(null);
+        ((Season)editor.CurrentPage!).Title = "The Shadowfell";
+        await editor.ToggleEditCommand.ExecuteAsync(null);
+        await editor.ShutdownAsync();
+
+        Assert.True(File.Exists(webCopy));
+        Assert.Contains("The Shadowfell", File.ReadAllText(webCopy));
+        Assert.False(File.Exists(webCopy + ".partial"));
+    }
+
+    [Fact]
     public async Task The_shared_app_refuses_a_guide_folder_that_fails_the_extra_check()
     {
         var platform = new FakePlatform { SupportsServer = false };
@@ -497,6 +526,7 @@ public class ViewModelTests
         public bool SupportsServer { get; set; } = true;
         public string CacheFolder { get; } = TempFolder.Create("platform-cache");
         public string AppVersion { get; set; } = "1.0.0";
+        public bool SupportsWebCopy { get; set; }
 
         public Task AlertAsync(string title, string message)
         {

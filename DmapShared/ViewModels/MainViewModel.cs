@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DmapShared.Api;
+using DmapShared.Export;
 using DmapShared.Models;
 using DmapShared.Storage;
 using System.Text.Json;
@@ -455,6 +456,9 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Whether the last save actually wrote anything (Refresh words its status from this).</summary>
     private bool _lastSaveWrote;
 
+    /// <summary>Whether this person changed the guide since the app opened (the shared web copy is then updated on close).</summary>
+    private bool _savedThisSession;
+
     [RelayCommand]
     public async Task SaveAsync()
     {
@@ -484,6 +488,7 @@ public partial class MainViewModel : ObservableObject
                 return keepMine;
             });
             _lastSaveWrote = written > 0;
+            _savedThisSession |= written > 0;
             if (written > 0) StatusText = $"Saved {DateTime.Now:t}";
         }
         catch (Exception ex)
@@ -510,10 +515,11 @@ public partial class MainViewModel : ObservableObject
             "Keep mine", "Keep theirs");
     }
 
-    /// <summary>Save, and let go of the page being edited (when the app closes).</summary>
+    /// <summary>Save, bring the shared web copy up to date, and let go of the page being edited (when the app closes).</summary>
     public async Task ShutdownAsync()
     {
         await SaveAsync();
+        await UpdateSharedWebCopyAsync();
         await _gate.WaitAsync();
         try
         {
@@ -1043,6 +1049,76 @@ public partial class MainViewModel : ObservableObject
             await _platform.AlertAsync("DMAP Guide", $"Could not add the picture:\n{Friendly(ex)}");
             return null;
         }
+    }
+
+    // ============================================================
+    // WEB COPY: the guide as one read-only web page
+    // ============================================================
+    /// <summary>The web copy kept in the shared folder, beside the app, for people without the app.</summary>
+    public const string SharedWebCopyName = "DMAP Guide (web copy).html";
+
+    /// <summary>Save the guide as it is now as a web page anyone can open in a browser.</summary>
+    internal async Task SaveWebCopyAsync()
+    {
+        if (!IsConnected) return;
+        string name = $"{(string.IsNullOrWhiteSpace(Data.ShowName) ? "DMAP" : Data.ShowName.Trim())} Guide (web copy).html";
+        if (await _platform.PickSaveFileAsync("Save a web copy of the guide", name) is not string file) return;
+
+        CommitPendingEdits?.Invoke();
+        StatusText = "Making the web copy…";
+        try
+        {
+            await File.WriteAllTextAsync(file, await BuildWebCopyAsync());
+            StatusText = "";
+            await _platform.AlertAsync("Web copy saved",
+                $"The web copy is saved as:\n{file}\n\nIt opens in any web browser, on a PC, a Mac or a phone, without the app. " +
+                "It shows the guide as it is now; make a new one to include later changes.");
+        }
+        catch (Exception ex)
+        {
+            StatusText = "";
+            await _platform.AlertAsync("DMAP Guide", $"The web copy couldn't be saved:\n{Friendly(ex)}");
+        }
+    }
+
+    /// <summary>
+    /// When someone who changed the guide closes the app, bring the shared web copy up to date,
+    /// so people reading it in a browser see the guide as it is now. Only the app writes it;
+    /// people who can only read the guide (or made no changes) leave it alone.
+    /// </summary>
+    private async Task UpdateSharedWebCopyAsync()
+    {
+        if (!_savedThisSession || !FolderIsFixed || IsReadOnly || !_platform.SupportsWebCopy) return;
+        if (_store is not FolderGuideStore folder || Directory.GetParent(folder.Folder) is not DirectoryInfo shared) return;
+
+        try
+        {
+            StatusText = "Updating the web copy…";
+            string target = Path.Combine(shared.FullName, SharedWebCopyName);
+            string partial = target + ".partial";
+            await File.WriteAllTextAsync(partial, await BuildWebCopyAsync());
+            File.Move(partial, target, overwrite: true); // readers never get a half-written page
+        }
+        catch
+        {
+            // The guide itself is saved; the web copy catches up the next time.
+        }
+    }
+
+    private async Task<string> BuildWebCopyAsync()
+    {
+        // Shrinking the pictures is the slow part: do it away from the screen.
+        var stored = Data.DungeonMasters.Concat(Data.Cast).Concat(Data.Guests)
+            .Concat(Data.AllCampaigns.SelectMany(c => c.Characters))
+            .Concat(Data.AllEpisodes.SelectMany(e => e.GuestCast))
+            .Select(m => m.ImagePath).Concat(Data.AllCampaigns.Select(c => c.CoverImage))
+            .Where(p => !string.IsNullOrWhiteSpace(p)).Distinct()
+            .Select(p => (Stored: p, File: GuideImages.Resolve(p))).ToList();
+        var pictures = await Task.Run(() => stored.AsParallel()
+            .Select(p => (p.Stored, Src: p.File is string f ? _platform.PictureForWeb(f, 480) : null))
+            .ToDictionary(p => p.Stored, p => p.Src));
+
+        return WebCopy.Build(Data, AppVersion, DateTime.Now, p => pictures.GetValueOrDefault(p));
     }
 
     // ============================================================

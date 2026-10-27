@@ -37,6 +37,15 @@ public interface IPlatformServices
 
     /// <summary>This app's version, e.g. "1.0.4" (shown in Settings; the shared guide remembers the newest seen).</summary>
     string AppVersion { get; }
+
+    /// <summary>Whether this app can save a web copy of the guide (the desktop can; the phone doesn't yet).</summary>
+    bool SupportsWebCopy => false;
+
+    /// <summary>Let the user choose where to save a file; null if cancelled (or not supported).</summary>
+    Task<string?> PickSaveFileAsync(string title, string fileName) => Task.FromResult<string?>(null);
+
+    /// <summary>A picture file made small enough for the web copy, as a data: address; null if it can't be read.</summary>
+    string? PictureForWeb(string file, int maxSize) => null;
 }
 
 /// <summary>Where the guide lives and who's using it. Saved per user, per device.</summary>
