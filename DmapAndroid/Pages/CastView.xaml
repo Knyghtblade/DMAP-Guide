@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- The Cast page: the show's real people, across every campaign (the desktop's Cast page). -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:vm="clr-namespace:DmapShared.ViewModels;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.CastView"
+             x:DataType="vm:CastPageViewModel">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}" Text="{Binding Main.Data.ShowName}"/>
+        <Label Style="{StaticResource PageTitle}" Text="Cast"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Label Style="{StaticResource Body}" FontFamily="DmapBodyItalic" TextColor="{StaticResource InkSoftColor}" Margin="2,0,0,8"
+               Text="The people who make the show, across every campaign. Dungeon Masters listed here can be picked on campaign and episode pages; guest stars can be ticked on episode pages. Tap a campaign or a character to open it."/>
+
+        <!-- Dungeon Masters -->
+        <HorizontalStackLayout Style="{StaticResource SectionRow}" Margin="0,2,0,10">
+            <Label Text="Dungeon Masters" Style="{StaticResource SectionHeader}"/>
+            <c:AddButton Text="+ Add Dungeon Master" Clicked="OnAddDungeonMaster"/>
+        </HorizontalStackLayout>
+        <Label Style="{StaticResource EmptyNote}" Text="No Dungeon Masters yet. Press Edit Page, then + Add Dungeon Master."
+               IsVisible="{Binding DungeonMasters.Count, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding DungeonMasters}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:PersonCard/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+        <!-- The cast -->
+        <HorizontalStackLayout Style="{StaticResource SectionRow}" Margin="0,10,0,10">
+            <Label Text="The Company" Style="{StaticResource SectionHeader}"/>
+            <c:AddButton Text="+ Add person" Clicked="OnAddPerson"/>
+        </HorizontalStackLayout>
+        <Label Style="{StaticResource EmptyNote}" Text="No one on the cast list yet. Press Edit Page, then + Add person."
+               IsVisible="{Binding Cast.Count, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Cast}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:PersonCard/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+        <!-- Guest stars -->
+        <HorizontalStackLayout Style="{StaticResource SectionRow}" Margin="0,10,0,10">
+            <Label Text="Guest Stars" Style="{StaticResource SectionHeader}"/>
+            <c:AddButton Text="+ Add guest star" Clicked="OnAddGuestStar"/>
+        </HorizontalStackLayout>
+        <Label Style="{StaticResource EmptyNote}" Text="No guest stars yet. Press Edit Page, then + Add guest star. Tick them on the episodes they're in."
+               IsVisible="{Binding Guests.Count, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Guests}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:PersonCard/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+    </VerticalStackLayout>
+</ContentView>

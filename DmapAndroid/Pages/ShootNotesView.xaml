@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- An episode's Shoot Notes page (the desktop's Shoot Notes). -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Pages.ShootNotesView"
+             x:DataType="m:ShootNotesPage">
+    <VerticalStackLayout Spacing="2" Padding="2,0,6,24">
+        <Label Style="{StaticResource PageKicker}">
+            <Label.FormattedText>
+                <FormattedString>
+                    <Span Text="{Binding Episode.Campaign.DisplayName}"/>
+                    <Span Text="  ›  "/>
+                    <Span Text="{Binding Episode.DisplayName}"/>
+                </FormattedString>
+            </Label.FormattedText>
+        </Label>
+        <Label Style="{StaticResource PageTitle}" Text="Shoot Notes"/>
+        <Label Style="{StaticResource Flourish}"/>
+
+        <Label Style="{StaticResource Body}" FontFamily="DmapBodyItalic" TextColor="{StaticResource InkSoftColor}" Margin="2,0,0,10"
+               Text="What happened on the day: the moments, mishaps and surprises from filming this episode. The producer writes them here; marketing reads them to shape the go-to-market plan."/>
+
+        <c:InkEditor Text="{Binding Episode.ShootNotes}" Placeholder="No shoot notes yet." MinimumHeightRequest="160"/>
+
+        <c:TomeButton Text="← Back to the episode" Margin="0,16,0,0" HorizontalOptions="Start" Clicked="OnBack"/>
+    </VerticalStackLayout>
+</ContentView>

@@ -15,7 +15,7 @@
         <Label Style="{StaticResource EmptyNote}" Text="Shown to other people on the pages you change."/>
 
         <Label Text="The Guide" Style="{StaticResource SectionHeader}" Margin="0,8,0,6"/>
-        <VerticalStackLayout IsVisible="{Binding CanUseFolder}" Margin="0,0,0,8">
+        <VerticalStackLayout IsVisible="{Binding CanChooseWhere}" Margin="0,0,0,8">
             <RadioButton GroupName="Where" IsChecked="{Binding UseServer}" Content="The shared guide server"/>
             <RadioButton GroupName="Where" IsChecked="{Binding UseFolder}" Content="A folder on this computer (e.g. a shared OneDrive folder)"/>
         </VerticalStackLayout>
@@ -34,6 +34,22 @@
                 <Label Text="Show key" Style="{StaticResource Body}" VerticalOptions="Center"/>
             </HorizontalStackLayout>
             <Label Style="{StaticResource EmptyNote}" Text="Ask the person who runs the shared guide for its address and access key."/>
+        </VerticalStackLayout>
+
+        <!-- The Mac: the guide is a folder, the "guide" folder inside the shared DMAP Guide folder in OneDrive -->
+        <VerticalStackLayout IsVisible="{Binding UseFolder}" Spacing="4">
+            <Label Style="{StaticResource Body}">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="Kept in "/>
+                        <Span Text="{Binding DataFolder, Mode=OneWay}" FontFamily="DmapBodyItalic"/>
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
+            <Label Style="{StaticResource EmptyNote}"
+                   Text="Choose the shared DMAP Guide folder in OneDrive (or the &quot;guide&quot; folder inside it). Everyone who opens that folder sees the same guide; who can change it is set by the folder's sharing in OneDrive."/>
+            <c:TomeButton Text="Choose folder…" HorizontalOptions="Start" Margin="0,6,0,0" Command="{Binding ChooseFolderCommand}"
+                          IsEnabled="{Binding IsWorking, Converter={StaticResource Not}}"/>
         </VerticalStackLayout>
 
         <Label Style="{StaticResource Body}" TextColor="{StaticResource RubricColor}" Margin="2,12,0,0"

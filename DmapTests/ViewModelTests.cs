@@ -111,6 +111,42 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task A_mac_picking_the_shared_folder_opens_the_guide_inside_it_and_never_starts_an_empty_one()
+    {
+        // The shared folder as OneDrive holds it: the app, and the guide in a "guide" folder beside it.
+        var shared = TempFolder.Create("shared");
+        string guide = Path.Combine(shared, "guide");
+        var seed = new MainViewModel(new FakePlatform { SupportsServer = false }, new FakeSettings(new GuideSettings { UserName = "Paul" }))
+            { RequiredFolder = guide };
+        Directory.CreateDirectory(guide);
+        await seed.StartAsync();
+        await seed.ShutdownAsync();
+        Assert.True(DmapShared.Storage.FolderGuideStore.HasData(guide));
+
+        // A Mac: no folder chosen yet, so it asks for one (and says how), rather than for a server.
+        var platform = new FakePlatform { SupportsServer = false };
+        var mac = new MainViewModel(platform, new FakeSettings(new GuideSettings { UserName = "Sam" }));
+        await mac.StartAsync();
+        var asking = Assert.IsType<GuideUnavailablePage>(mac.CurrentPage);
+        Assert.Contains("Choose folder", asking.Message);
+
+        // Picking an empty folder is refused, and nothing is written there.
+        var empty = TempFolder.Create("empty");
+        platform.PickedFolder = empty;
+        string? problem = await mac.ChooseFolderAsync(new GuideSettings { UserName = "Sam" });
+        Assert.Contains("There's no DMAP Guide in that folder", problem);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(empty));
+        Assert.False(mac.IsConnected);
+
+        // Picking the shared folder itself opens the guide inside it.
+        platform.PickedFolder = shared;
+        problem = await mac.ChooseFolderAsync(new GuideSettings { UserName = "Sam" });
+        Assert.Null(problem);
+        Assert.True(mac.IsConnected);
+        Assert.Equal(guide, mac.Location);
+    }
+
+    [Fact]
     public async Task The_shared_app_refuses_a_guide_folder_that_fails_the_extra_check()
     {
         var platform = new FakePlatform { SupportsServer = false };
@@ -536,7 +572,8 @@ public class ViewModelTests
 
         public Task<bool> AskAsync(string title, string message, string yes, string no) => Task.FromResult(Answer);
         public Task<string?> PickImageAsync() => Task.FromResult<string?>(null);
-        public Task<string?> PickFolderAsync(string title, string? startIn) => Task.FromResult<string?>(null);
+        public string? PickedFolder { get; set; }
+        public Task<string?> PickFolderAsync(string title, string? startIn) => Task.FromResult(PickedFolder);
         public void BeginInvoke(Action action) => action();
         public List<string> Links { get; } = new();
         public void OpenLink(string url) => Links.Add(url);

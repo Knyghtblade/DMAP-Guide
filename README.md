@@ -7,7 +7,7 @@ The production guide to *Dungeon Masters*, made to look like a tome. It has seas
 | Folder | What it is |
 |---|---|
 | `DmapGuide` | The Windows desktop app (WPF). |
-| `DmapAndroid` | The Android app (.NET MAUI). It's the same tome as the desktop, page for page. |
+| `DmapAndroid` | The Android app (.NET MAUI), which also builds the Mac desktop app. The guide pages are shared. |
 | `DmapShared` | Everything both apps share: the guide's pages, the view model behind every page, and the two places a guide can live (see below). Change behaviour here, so the apps stay identical. |
 | `DmapApi` | The shared guide server (ASP.NET Core and SQLite). See [DmapApi/README.md](DmapApi/README.md). |
 | `DmapTests` | Tests for the server, for syncing between two people, and for the shared view model. Run `dotnet test`. |
@@ -16,6 +16,8 @@ The production guide to *Dungeon Masters*, made to look like a tome. It has seas
 
 - **A folder** (the desktop app). It holds one small file per page. The app opens the `guide` folder beside `DMAP Guide.exe` when there is one (that's how the shared OneDrive folder works), otherwise the folder chosen in Settings. The desktop never needs a server or an access key. A folder shared as view-only opens read-only, without the Edit button.
 - **The shared server**, for the phone app (paused for now). It holds one record per page.
+
+The Mac app uses the same folder format as Windows. On first launch, choose the OneDrive-synced shared folder (or the `guide` folder inside it) in Settings; a folder with no guide in it is refused rather than started as a new guide. It then reads and writes those same files, so Mac and Windows users see the same guide as OneDrive syncs their changes. The Mac app is a separate app from the Windows `.exe`; do not copy the guide data into the app.
 
 Both work the same way:
 - Only pages that changed are saved.
@@ -34,5 +36,6 @@ The shipped exe only opens the `guide` folder beside it, and only when that fold
 ## Running it while developing
 
 - **Desktop:** double-click `Run DMAP Guide.cmd`. It opens the folder in Settings (or `--data <folder>` for a different one).
+- **Mac:** Mac builds can only be made on a Mac. On Windows, `Make Mac Build Kit.cmd` packs the code and `MAC BUILD - START HERE.txt` into `publish\DMAP Guide - Mac build kit <version>.zip` for whoever builds it. On the Mac, `bash "Build Mac App.command"` builds a universal app and `DMAP Guide for Mac.zip` for the shared folder. Unsigned builds work but each Mac allows them once (Privacy & Security > Open Anyway); with an Apple Developer account the script can sign it for notarizing (see the START HERE file).
 - **Tests:** `dotnet test`.
 - **Phone and server (paused):** the `DmapAndroid` and `DmapApi` projects are kept but not in use. The server runs with `dotnet run --project DmapApi -- --urls http://127.0.0.1:5080`; see `DmapAndroid\ANDROID PHONE TEST - START HERE.txt` for the phone.

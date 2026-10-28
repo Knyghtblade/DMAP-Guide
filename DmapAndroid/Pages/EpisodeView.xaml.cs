@@ -15,7 +15,8 @@ public partial class EpisodeView : ContentView
         if (Episode.Campaign is Campaign c) AppState.Main.OpenRosterCommand.Execute(c);
     }
 
-    private void OnAddGuest(object? sender, EventArgs e) => AppState.Main.AddGuestCommand.Execute(Episode);
+    private void OnOpenShootNotes(object? sender, EventArgs e) => AppState.Main.OpenShootNotesCommand.Execute(Episode);
+    private void OnOpenLink(object? sender, EventArgs e) => AppState.Main.OpenLinkCommand.Execute((ItemOf(sender!) as AirDate)?.Link);
     private void OnAddKeyMoment(object? sender, EventArgs e) => AppState.Main.AddKeyMomentCommand.Execute(Episode);
     private void OnAddAirDate(object? sender, EventArgs e) => AppState.Main.AddAirDateCommand.Execute(Episode);
     private void OnRemoveKeyMoment(object? sender, EventArgs e) => AppState.Main.RemoveKeyMomentCommand.Execute(ItemOf(sender!));

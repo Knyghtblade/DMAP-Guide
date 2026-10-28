@@ -1,20 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-android</TargetFramework>
+    <TargetFramework Condition="'$(DmapBuildMacCatalyst)' != 'true'">net10.0-android</TargetFramework>
+    <TargetFramework Condition="'$(DmapBuildMacCatalyst)' == 'true'">net10.0-maccatalyst</TargetFramework>
     <OutputType>Exe</OutputType>
     <RootNamespace>DmapAndroid</RootNamespace>
+    <AssemblyName Condition="'$(DmapBuildMacCatalyst)' == 'true'">DMAP Guide</AssemblyName>
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationTitle>DMAP Guide</ApplicationTitle>
-    <ApplicationId>com.dmapguide.mobile</ApplicationId>
-    <ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
+    <ApplicationId Condition="'$(DmapBuildMacCatalyst)' != 'true'">com.dmapguide.mobile</ApplicationId>
+    <ApplicationId Condition="'$(DmapBuildMacCatalyst)' == 'true'">com.dmapguide.desktop</ApplicationId>
+    <ApplicationDisplayVersion Condition="'$(DmapBuildMacCatalyst)' != 'true'">1.1</ApplicationDisplayVersion>
+    <!-- The Mac app carries the Windows app's version (DmapGuide.csproj), so the two agree on which is newest. -->
+    <ApplicationDisplayVersion Condition="'$(DmapBuildMacCatalyst)' == 'true'">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\DmapGuide\DmapGuide.csproj')), '&lt;Version&gt;([0-9.]+)&lt;/Version&gt;').Groups[1].Value)</ApplicationDisplayVersion>
     <ApplicationVersion>2</ApplicationVersion>
-    <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion Condition="'$(DmapBuildMacCatalyst)' != 'true'">23.0</SupportedOSPlatformVersion>
+    <!-- Mac Catalyst 17 = macOS 14 Sonoma; the current Apple tooling for .NET 10 builds for 17 and later. -->
+    <SupportedOSPlatformVersion Condition="'$(DmapBuildMacCatalyst)' == 'true'">17.0</SupportedOSPlatformVersion>
     <!-- Always put the app's code inside the APK, so an APK copied to a phone runs on its own. -->
-    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+    <EmbedAssembliesIntoApk Condition="'$(DmapBuildMacCatalyst)' != 'true'">true</EmbedAssembliesIntoApk>
+    <CodesignEntitlements Condition="'$(DmapBuildMacCatalyst)' == 'true'">Platforms\MacCatalyst\Entitlements.plist</CodesignEntitlements>
     <MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
   </PropertyGroup>
 
@@ -23,7 +31,18 @@
     <EmbeddedResource Include="..\DmapGuide\Assets\dmap-logo.png" LogicalName="DmapAndroid.Resources.dmaplogo.png" />
     <EmbeddedResource Include="..\DmapGuide\Assets\dragon-scales.jpg" LogicalName="DmapAndroid.Resources.dragonscales.jpg" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
+    <PackageReference Include="CommunityToolkit.Maui" Version="13.0.0" Condition="'$(DmapBuildMacCatalyst)' == 'true'" />
     <ProjectReference Include="..\DmapShared\DmapShared.csproj" />
   </ItemGroup>
+
+  <!-- Signed Mac builds only (Build Mac App.command sets DmapSkipCodesignVerify): codesign signs the app
+       but a check after it fails, so no app is produced. Microsoft's documented workaround:
+       https://learn.microsoft.com/en-us/dotnet/maui/mac-catalyst/deployment/publish-outside-app-store#disable-code-signature-verification -->
+  <Target Name="_SkipCodesignVerify" BeforeTargets="_CodesignVerify" AfterTargets="_CodesignAppBundle"
+          Condition="'$(DmapSkipCodesignVerify)' == 'true'">
+    <PropertyGroup>
+      <_RequireCodeSigning>false</_RequireCodeSigning>
+    </PropertyGroup>
+  </Target>
 
 </Project>

@@ -166,8 +166,12 @@ public partial class MainViewModel : ObservableObject
             : !_platform.SupportsFolders || string.IsNullOrWhiteSpace(_settings.DataFolder));
         if (nothingChosenYet)
         {
-            ShowUnavailable("Connect to the shared guide",
-                "Enter the shared guide's server address and access key in Settings. The person who runs the shared guide can give you both.");
+            ShowUnavailable("Connect to the shared guide", ServerChosen(_settings)
+                ? "Enter the shared guide's server address and access key in Settings. The person who runs the shared guide can give you both."
+                : "Tell DMAP Guide where the shared guide is: press Settings…, then Choose folder…, and pick the shared \"DMAP Guide\" " +
+                  "folder in OneDrive (or the \"guide\" folder inside it). It only asks once.\n\n" +
+                  "If you can't see the shared folder in OneDrive, open it on the OneDrive website, choose \"Add shortcut to My files\", " +
+                  "and wait for OneDrive to show it on this computer.");
             return;
         }
 
@@ -699,7 +703,7 @@ public partial class MainViewModel : ObservableObject
             if (newest != null && newest > mine)
             {
                 VersionWarning = $"⚠ You're on DMAP Guide {mine}, but {newest} has been used with this guide. " +
-                                 "Close the app and open the latest DMAP Guide.exe from the shared folder.";
+                                 "Close the app and open the latest DMAP Guide (on a Mac, the latest DMAP Guide for Mac) from the shared folder.";
                 return;
             }
             VersionWarning = "";
@@ -1249,6 +1253,15 @@ public partial class MainViewModel : ObservableObject
             "Choose where the guide is kept (e.g. a shared OneDrive folder)",
             _store is FolderGuideStore current ? current.Folder : next.DataFolder);
         if (folder == null) return null;
+
+        // The shared folder holds the app and a "guide" folder beside it: picking the shared folder itself means its guide.
+        string inside = Path.Combine(folder, "guide");
+        if (!FolderGuideStore.HasData(folder) && FolderGuideStore.HasData(inside)) folder = inside;
+
+        // With no guide open, there is nothing to copy: an empty folder is a wrong turn, not a new guide.
+        if (!FolderGuideStore.HasData(folder) && !(_store is FolderGuideStore && IsConnected))
+            return $"There's no DMAP Guide in that folder:\n{folder}\n\n" +
+                   "Choose the shared \"DMAP Guide\" folder in OneDrive, or the \"guide\" folder inside it.";
 
         if (FolderGuideStore.HasData(folder))
         {

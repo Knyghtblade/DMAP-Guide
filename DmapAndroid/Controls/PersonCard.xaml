@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A person on the Cast page (the desktop's person card): the campaigns they run and the characters they play, as links. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Controls.PersonCard"
+             x:DataType="m:CastMember">
+    <Border Style="{StaticResource Card}" Padding="12" Margin="0,0,0,12">
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsPointedAt}" Value="True">
+                <Setter Property="Stroke" Value="{StaticResource GoldColor}"/>
+                <Setter Property="StrokeThickness" Value="2.5"/>
+            </DataTrigger>
+        </Border.Triggers>
+        <Grid ColumnDefinitions="112,*,Auto" ColumnSpacing="8">
+            <VerticalStackLayout Spacing="6">
+                <c:Portrait ImagePath="{Binding ImagePath}" Size="104"/>
+                <c:AddButton Text="Picture…" Margin="14,0,0,0" HorizontalOptions="Start" Clicked="OnChoosePortrait"/>
+                <c:AddButton Text="Remove picture" Margin="14,0,0,0" HorizontalOptions="Start" Clicked="OnRemovePortrait"/>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                <c:InkEntry Text="{Binding PlayerName}" Placeholder="Name" FontFamily="DmapDisplay"
+                            FontSize="19" TextColor="{StaticResource RubricColor}"/>
+                <c:InkEntry Text="{Binding CharacterSummary}" Placeholder="Role on the show"
+                            FontFamily="DmapBodyItalic" FontSize="14" TextColor="{StaticResource InkSoftColor}"/>
+
+                <Label Text="BIO" Style="{StaticResource FieldLabel}" Margin="2,8,0,0"/>
+                <c:InkEditor Text="{Binding CharacterDescription}" Placeholder="About them: background, other work, what they bring to the table…"/>
+
+                <!-- Guest stars: the episodes they're in -->
+                <Label Text="{Binding OtherAppearances}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkFadedColor}"
+                       Margin="3,8,0,0" IsVisible="{Binding OtherAppearances, Converter={StaticResource NotEmpty}}"/>
+
+                <!-- Dungeon Masters: the campaigns they run -->
+                <VerticalStackLayout IsVisible="{Binding Runs, Converter={StaticResource NotEmpty}}" Margin="0,10,0,0">
+                    <Label Text="RUNS" Style="{StaticResource FieldLabel}"/>
+                    <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Runs}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="m:Campaign">
+                                <c:LinkRow Target="{Binding}" WidthRequest="150" Margin="0,4,8,0">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Grid WidthRequest="132" HeightRequest="92" HorizontalOptions="Center">
+                                            <Border Stroke="{StaticResource GoldColor}" StrokeThickness="2.5" StrokeShape="RoundRectangle 4"
+                                                    BackgroundColor="#33876A45">
+                                                <Label Text="⚔" FontSize="28" TextColor="{StaticResource InkFadedColor}"
+                                                       HorizontalOptions="Center" VerticalOptions="Center"/>
+                                            </Border>
+                                            <c:CoverArt ImagePath="{Binding CoverImage}" HeightRequest="92" Margin="0"/>
+                                        </Grid>
+                                        <Label Text="{Binding Title}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="12"
+                                               TextColor="{StaticResource RubricColor}" HorizontalTextAlignment="Center"/>
+                                        <Label FontFamily="DmapBodyItalic" FontSize="12" TextColor="{StaticResource InkFadedColor}" HorizontalTextAlignment="Center">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="Campaign "/>
+                                                    <Span Text="{Binding Number}"/>
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                    </VerticalStackLayout>
+                                </c:LinkRow>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                </VerticalStackLayout>
+
+                <!-- Everyone: the characters they play, each opening its campaign's Characters page -->
+                <VerticalStackLayout IsVisible="{Binding Roles, Converter={StaticResource NotEmpty}}" Margin="0,10,0,0">
+                    <Label Text="PLAYS" Style="{StaticResource FieldLabel}"/>
+                    <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding Roles}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="m:CharacterRole">
+                                <c:LinkRow WidthRequest="128" Margin="0,4,8,0" Tapped="OnOpenCharacter">
+                                    <VerticalStackLayout Spacing="2">
+                                        <c:Portrait ImagePath="{Binding Character.ImagePath}" Size="88" HorizontalOptions="Center"/>
+                                        <Label Text="{Binding Character.CharacterName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="12"
+                                               TextColor="{StaticResource RubricColor}" HorizontalTextAlignment="Center"/>
+                                        <Label Text="{Binding CampaignName}" FontFamily="DmapBodyItalic" FontSize="12"
+                                               TextColor="{StaticResource InkFadedColor}" HorizontalTextAlignment="Center"/>
+                                    </VerticalStackLayout>
+                                </c:LinkRow>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <c:RemoveButton Grid.Column="2" Clicked="OnRemove"/>
+        </Grid>
+    </Border>
+</ContentView>

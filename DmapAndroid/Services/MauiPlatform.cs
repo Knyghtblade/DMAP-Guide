@@ -2,11 +2,16 @@ using DmapShared.ViewModels;
 
 namespace DmapAndroid.Services;
 
-/// <summary>The phone's dialogs, pickers and timers for the shared view model.</summary>
+/// <summary>Dialogs, pickers and timers supplied by the MAUI app.</summary>
 public sealed class MauiPlatform : IPlatformServices
 {
+#if MACCATALYST
+    public bool SupportsFolders => true;
+    public bool SupportsServer => false;
+#else
     public bool SupportsFolders => false;
     public bool SupportsServer => true;
+#endif
 
     public string CacheFolder => FileSystem.CacheDirectory;
 
@@ -42,7 +47,19 @@ public sealed class MauiPlatform : IPlatformServices
         return copy;
     }
 
-    public Task<string?> PickFolderAsync(string title, string? startIn) => Task.FromResult<string?>(null);
+    public async Task<string?> PickFolderAsync(string title, string? startIn)
+    {
+#if MACCATALYST
+        var picker = CommunityToolkit.Maui.Storage.FolderPicker.Default;
+        var result = string.IsNullOrWhiteSpace(startIn)
+            ? await picker.PickAsync(CancellationToken.None)
+            : await picker.PickAsync(startIn, CancellationToken.None);
+        // Not successful: cancelled, or the folder couldn't be opened. Either way nothing changes.
+        return result.IsSuccessful ? result.Folder?.Path : null;
+#else
+        return null;
+#endif
+    }
 
     public void BeginInvoke(Action action) => MainThread.BeginInvokeOnMainThread(action);
 
@@ -54,17 +71,19 @@ public sealed class MauiPlatform : IPlatformServices
         });
 }
 
-/// <summary>Settings on the phone: the access key in secure storage, the rest in preferences.</summary>
-public sealed class PhoneSettings : ISettingsStore
+/// <summary>Per-device settings. Mac Catalyst keeps the guide folder path in preferences.</summary>
+public sealed class MauiSettings : ISettingsStore
 {
     private const string UserNameKey = "dmap-user-name";
     private const string AddressKey = "dmap-api-address";
     private const string AccessKey = "dmap-api-key";
+    private const string DataFolderKey = "dmap-data-folder";
 
     public async Task<GuideSettings> LoadAsync()
     {
-        bool emulator = DeviceInfo.Current.DeviceType == DeviceType.Virtual;
         string key;
+        string address = Preferences.Default.Get(AddressKey, "");
+        bool emulator = DeviceInfo.Current.DeviceType == DeviceType.Virtual;
         try
         {
             key = await SecureStorage.Default.GetAsync(AccessKey) ?? "";
@@ -74,7 +93,6 @@ public sealed class PhoneSettings : ISettingsStore
             key = ""; // secure storage can be reset by the system; ask for the key again
         }
 
-        string address = Preferences.Default.Get(AddressKey, "");
         if (emulator && address.Length == 0)
         {
             // The emulator reaches this computer's local test server at 10.0.2.2.
@@ -84,10 +102,15 @@ public sealed class PhoneSettings : ISettingsStore
 
         return new GuideSettings
         {
+#if MACCATALYST
+            UseServer = false,
+#else
             UseServer = true,
+#endif
             UserName = Preferences.Default.Get(UserNameKey, DeviceInfo.Current.Name ?? ""),
             ServerAddress = address,
-            AccessKey = key
+            AccessKey = key,
+            DataFolder = Preferences.Default.Get(DataFolderKey, "")
         };
     }
 
@@ -95,6 +118,7 @@ public sealed class PhoneSettings : ISettingsStore
     {
         Preferences.Default.Set(UserNameKey, settings.UserName);
         Preferences.Default.Set(AddressKey, settings.ServerAddress);
+        Preferences.Default.Set(DataFolderKey, settings.DataFolder);
         await SecureStorage.Default.SetAsync(AccessKey, settings.AccessKey);
     }
 }

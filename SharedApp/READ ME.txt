@@ -47,6 +47,27 @@ save your changes and pick up everyone else's straight away.
 To check you are on the shared guide, open Settings. "Kept in" should show a
 path inside OneDrive that ends in "DMAP Guide\guide".
 
+ON A MAC
+--------
+"DMAP Guide for Mac.zip" in this folder is the Mac version of the app (macOS 14 Sonoma
+or newer). It works on the same shared guide as the Windows app.
+
+1. Make sure the OneDrive app on your Mac is signed in with your work account, and that
+   this shared folder shows in the Finder under OneDrive (on the OneDrive website: open
+   "Shared", find the "DMAP Guide" folder, choose "Add shortcut to My files").
+   Right-click the folder in the Finder and choose "Always Keep on This Device".
+2. Double-click "DMAP Guide for Mac.zip" to unzip it, and drag "DMAP Guide" into your
+   Applications folder. (Copy it out of OneDrive like this; don't run it from OneDrive.)
+3. Open it. If the Mac says it can't be opened or can't check it for malicious software,
+   click Done, then open System Settings > Privacy & Security, scroll down, and click
+   "Open Anyway" next to DMAP Guide, and enter your Mac password. It only asks once.
+4. The first time, the app asks where the guide is. Press Settings..., type your name,
+   press "Choose folder..." and pick this shared "DMAP Guide" folder under OneDrive in the
+   Finder sidebar. Then press "Use these settings".
+
+When there's a new version, replace the app in Applications with the one from the new
+"DMAP Guide for Mac.zip". The version number is on the app's Settings page.
+
 NO APP? READ IT IN A WEB BROWSER
 --------------------------------
 "DMAP Guide (web copy).html" in this folder is the whole guide as a web page.

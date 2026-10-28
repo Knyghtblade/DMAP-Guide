@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- A guest star on an episode, picked from the Cast page (the desktop's guest card). Tapping opens them on the Cast page. -->
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:m="clr-namespace:DmapShared.Models;assembly=DmapShared"
+             xmlns:c="clr-namespace:DmapAndroid.Controls"
+             x:Class="DmapAndroid.Controls.GuestCard"
+             x:DataType="m:CastMember">
+    <Border Style="{StaticResource Card}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+            <c:LinkRow Tapped="OnOpenPerson">
+                <Grid ColumnDefinitions="76,*" ColumnSpacing="8">
+                    <c:Portrait ImagePath="{Binding ImagePath}" Size="68"/>
+                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="1">
+                        <Label Text="{Binding PlayerName}" FontFamily="DmapHeading" FontAttributes="Bold" FontSize="15"
+                               TextColor="{StaticResource RubricColor}"/>
+                        <Label Text="{Binding CharacterSummary}" FontFamily="DmapBodyItalic" FontSize="13" TextColor="{StaticResource InkSoftColor}"
+                               IsVisible="{Binding CharacterSummary, Converter={StaticResource NotEmpty}}"/>
+                        <Border BackgroundColor="{StaticResource ArcaneColor}" StrokeThickness="0" StrokeShape="RoundRectangle 7"
+                                Padding="7,1" HorizontalOptions="Start" Margin="0,3,0,0">
+                            <Label Text="GUEST STAR" TextColor="#F7ECD2" FontFamily="DmapHeading" FontSize="9" FontAttributes="Bold"/>
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+            </c:LinkRow>
+            <c:RemoveButton Grid.Column="1" Clicked="OnRemove"/>
+        </Grid>
+    </Border>
+</ContentView>

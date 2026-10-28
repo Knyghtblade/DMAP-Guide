@@ -13,8 +13,13 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-        GuideSession.MachineName = DeviceInfo.Current.Name ?? "Phone";
-        _vm = new MainViewModel(new MauiPlatform(), new PhoneSettings());
+        GuideSession.MachineName = DeviceInfo.Current.Name
+#if MACCATALYST
+            ?? "Mac";
+#else
+            ?? "Phone";
+#endif
+        _vm = new MainViewModel(new MauiPlatform(), new MauiSettings());
         AppState.Main = _vm;
     }
 

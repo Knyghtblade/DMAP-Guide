@@ -9,7 +9,8 @@ Do the technical work; describe the result and what to do next. Anything written
 ## Direction (decided 18 Oct 2026)
 - The product is the **Windows desktop app shipped as one file in a shared OneDrive folder**:
   `DMAP Guide.exe` + a `guide` folder beside it. No server, no installer, no settings for colleagues.
-- The phone app (`DmapAndroid`) and the server (`DmapApi`) are **paused**, kept in the repo. The
+- The phone app (`DmapAndroid`) and the server (`DmapApi`) are **paused**, kept in the repo (but
+  `DmapAndroid` also builds the Mac app, see Status). The
   phone app still shares `DmapShared`, so keep it compiling and give it the same features
   (buttons, warnings) when a change is cheap, so the two stay identical.
 - Build the shared folder with `Publish Shared App.cmd` (bumps the version, see below). Only the
@@ -37,8 +38,15 @@ Do the technical work; describe the result and what to do next. Anything written
   portraits, for everyone incl. guest stars) as links; the Characters page links "Played by" to
   the Cast page. Also fixed a crash on every close with nothing to save (WPF `Close()` called
   inside `Closing`); Windows' Application event log showed it for every version before 1.0.7.
-- Uncommitted on 27 Oct and not mine: someone's Mac build work (`DmapAndroid` Mac Catalyst files,
-  `Build Mac App.command`, README.md lines). Left out of commits until its owner says it's ready.
+- 1.0.8 (27 Oct): **Mac version**, wanted by Paul and built by a colleague on their Mac. It is
+  `DmapAndroid` (MAUI) built for Mac Catalyst (`-p:DmapBuildMacCatalyst=true`); it opens the guide
+  folder picked in Settings (picking the shared folder opens its `guide`; empty folders are
+  refused). Its version is read from `DmapGuide.csproj`. The MAUI screens were brought up to the
+  Windows app: Cast page (Runs/Plays), Shoot Notes, guest stars from the Cast page, Played-by link,
+  air-date Watch links. `Make Mac Build Kit.cmd` makes `publish\DMAP Guide - Mac build kit <ver>.zip`
+  (instructions: `MAC BUILD - START HERE.txt`); rebuild and resend it after each Windows release.
+  Never built on a real Mac yet: checked by building the same screens for Windows
+  (`maui-windows` workload, scratch copy with Platforms/Windows added) and running them.
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe

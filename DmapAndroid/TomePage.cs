@@ -39,6 +39,7 @@ public sealed class TomePage : ContentPage
 
         _vm.PropertyChanged += OnViewModelChanged;
         _vm.GuideChanged += () => ScheduleTocRebuild();
+        _vm.PointingAt += ScrollToCard;
     }
 
     // ============================================================
@@ -150,6 +151,7 @@ public sealed class TomePage : ContentPage
                 new Label { Style = AppStyle("Flourish") },
                 SideLink("❧", "Prologue", () => _vm.ShowPrologueCommand.Execute(null)),
                 SideLink("☾", "Chronicle of Dates", () => _vm.ShowScheduleCommand.Execute(null)),
+                SideLink("♞", "Cast", () => _vm.ShowCastCommand.Execute(null)),
                 SideLink("⚙", "Settings", () => _vm.ShowSettingsCommand.Execute(null)),
                 new Label { Text = "TABLE OF CONTENTS", Style = AppStyle("FieldLabel"), Margin = new Thickness(6, 10, 0, 4) }
             }
@@ -298,6 +300,8 @@ public sealed class TomePage : ContentPage
         View view = page switch
         {
             Episode => new EpisodeView(),
+            ShootNotesPage => new ShootNotesView(),
+            CastPageViewModel => new CastView(),
             CastRosterPage => new RosterView(),
             Campaign => new CampaignView(),
             Season => new SeasonView(),
@@ -448,6 +452,25 @@ public sealed class TomePage : ContentPage
         row.Add(label, 2, 0);
 
         _toc.Children.Add(row);
+    }
+
+    // A link opened the page at a person or character: once the page is up, scroll their card into the middle.
+    private void ScrollToCard(CastMember member) =>
+        Dispatcher.Dispatch(async () =>
+        {
+            await Task.Delay(450); // the new page fades in first
+            if (FindCard(_pageHost, member) is Element card)
+                await _pageScroller.ScrollToAsync(card, ScrollToPosition.Center, true);
+        });
+
+    private static Element? FindCard(IVisualTreeElement parent, CastMember member)
+    {
+        foreach (var child in parent.GetVisualChildren())
+        {
+            if (child is PersonCard or RosterCard && ((Element)child).BindingContext == member) return (Element)child;
+            if (FindCard(child, member) is Element found) return found;
+        }
+        return null;
     }
 
     // ============================================================

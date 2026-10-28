@@ -1,4 +1,7 @@
 using Microsoft.Maui.Handlers;
+#if MACCATALYST
+using CommunityToolkit.Maui;
+#endif
 
 namespace DmapAndroid;
 
@@ -8,6 +11,9 @@ public static class MauiProgram
     {
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<App>();
+#if MACCATALYST
+        builder.UseMauiCommunityToolkit();
+#endif
         builder.ConfigureFonts(fonts =>
         {
             fonts.AddFont("CinzelDecorative-Bold.ttf", "DmapDisplay");

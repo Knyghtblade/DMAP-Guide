@@ -90,13 +90,39 @@
             </BindableLayout.ItemTemplate>
         </VerticalStackLayout>
 
-        <!-- Guest cast -->
-        <HorizontalStackLayout Style="{StaticResource SectionRow}">
-            <Label Text="Guest Stars" Style="{StaticResource SectionHeader}"/>
-            <c:AddButton Text="+ Add guest" Clicked="OnAddGuest"/>
-        </HorizontalStackLayout>
+        <!-- Guest stars: picked from the Cast page -->
+        <Label Text="Guest Stars" Style="{StaticResource SectionHeader}" Margin="0,12,0,4"/>
+        <c:EditOnly>
+            <Border Style="{StaticResource Card}">
+                <VerticalStackLayout>
+                    <Label Text="WHO'S GUESTING THIS EPISODE?" Style="{StaticResource FieldLabel}" Margin="2,0,0,4"/>
+                    <Label Style="{StaticResource EmptyNote}"
+                           Text="No guest stars on the Cast page yet. Add them there, then tick them here."
+                           IsVisible="{Binding HasShowGuests, Converter={StaticResource Not}}"/>
+                    <FlexLayout Wrap="Wrap" BindableLayout.ItemsSource="{Binding GuestChoices}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="m:GuestChoice">
+                                <HorizontalStackLayout Margin="0,0,16,2">
+                                    <CheckBox IsChecked="{Binding IsInEpisode}" VerticalOptions="Center"/>
+                                    <Label Text="{Binding Member.PlayerName}" VerticalOptions="Center" FontSize="14"
+                                           FontFamily="DmapBody" FontAttributes="Bold" TextColor="{StaticResource InkColor}"/>
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Border>
+        </c:EditOnly>
         <Label Style="{StaticResource EmptyNote}" Text="No guest stars."
-               IsVisible="{Binding GuestCast.Count, Converter={StaticResource IsEmpty}}"/>
+               IsVisible="{Binding GuestCount, Converter={StaticResource IsEmpty}}"/>
+        <VerticalStackLayout BindableLayout.ItemsSource="{Binding Guests}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="m:CastMember">
+                    <c:GuestCard/>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+        <!-- Guests written straight onto this episode by earlier versions -->
         <VerticalStackLayout BindableLayout.ItemsSource="{Binding GuestCast}">
             <BindableLayout.ItemTemplate>
                 <DataTemplate x:DataType="m:CastMember">
@@ -136,13 +162,21 @@
         <VerticalStackLayout BindableLayout.ItemsSource="{Binding AirDates}">
             <BindableLayout.ItemTemplate>
                 <DataTemplate x:DataType="m:AirDate">
-                    <Grid ColumnDefinitions="20,*,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="6" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="20,*,*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="6" Margin="0,0,0,6">
                         <Label Text="☾" TextColor="{StaticResource GoldColor}" FontSize="15" Margin="0,6,0,0"/>
                         <c:DateField Grid.Column="1" Date="{Binding Date}"/>
                         <c:InkEntry Grid.Column="2" Text="{Binding Platform}" Placeholder="Network / platform"/>
                         <c:RemoveButton Grid.Column="3" Clicked="OnRemoveAirDate" Margin="0,4,0,0"/>
                         <c:InkEntry Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Notes}" Placeholder="Notes"
                                     FontFamily="DmapBodyItalic" TextColor="{StaticResource InkSoftColor}"/>
+                        <!-- Link: the web address when editing; a Watch button when reading -->
+                        <c:EditOnly Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
+                            <c:InkEntry Text="{Binding Link}" Placeholder="Web address, e.g. https://www.youtube.com/watch?v=…" Keyboard="Url"/>
+                        </c:EditOnly>
+                        <c:ReadingOnly Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2">
+                            <c:TomeButton Text="Watch ↗" FontSize="10" HorizontalOptions="Start" Clicked="OnOpenLink"
+                                          IsVisible="{Binding Link, Converter={StaticResource NotEmpty}}"/>
+                        </c:ReadingOnly>
                     </Grid>
                 </DataTemplate>
             </BindableLayout.ItemTemplate>
@@ -151,5 +185,8 @@
         <!-- Production notes -->
         <Label Text="Production Notes" Style="{StaticResource SectionHeader}" Margin="0,14,0,4"/>
         <c:InkEditor Text="{Binding ProductionNotes}" Placeholder="Planning notes, props, reminders, schedule changes…"/>
+
+        <!-- Shoot notes live on their own page -->
+        <c:TomeButton Text="Shoot Notes →" Margin="0,14,0,0" HorizontalOptions="Start" Clicked="OnOpenShootNotes"/>
     </VerticalStackLayout>
 </ContentView>

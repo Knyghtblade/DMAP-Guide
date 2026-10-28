@@ -1,0 +1,110 @@
+DMAP Guide for Mac - how to build it
+=====================================
+
+Thank you for building this. DMAP Guide is the Dungeon Masters production guide: a
+desktop app the team uses from a shared OneDrive folder. It's written in .NET, and a
+Mac version has to be built on a Mac, which is what this kit is for. You end up with
+one file, "DMAP Guide for Mac.zip", to put in the team's shared OneDrive folder.
+
+It takes about 30-60 minutes the first time (mostly downloads), a few minutes after that.
+You need to be comfortable opening Terminal and pasting a command; no programming needed.
+
+
+WHAT YOU NEED (once)
+--------------------
+1. A Mac that's up to date: the current .NET 10 Apple tools need the newest Xcode, which
+   needs macOS 26.6 (Tahoe) or newer. About 20 GB free.
+   (The app you build runs on any Mac with macOS 14 Sonoma or newer.)
+2. Xcode, free from the Mac App Store, the newest version. After it installs, open it once,
+   accept the licence, and let it install its extra components. Then quit it.
+3. The .NET 10 SDK for macOS: https://dotnet.microsoft.com/download/dotnet/10.0
+   Pick "SDK", "macOS", and Arm64 for an Apple-chip Mac (M1, M2...) or x64 for an Intel
+   Mac. Run the installer.
+
+If the build later says ".NET for MacCatalyst ... requires Xcode X", install that Xcode
+version (or update Xcode), then run the build again.
+
+You do NOT need an Apple Developer account for the basic build. See step 6 for what an
+account adds.
+
+
+BUILD IT
+--------
+1. Unzip "DMAP Guide - Mac build kit.zip" somewhere simple, e.g. your Desktop.
+   You get a folder with "Build Mac App.command", this file, and some folders.
+
+2. Open Terminal (Applications > Utilities > Terminal).
+
+3. Type   bash    then a space, then drag "Build Mac App.command" from the Finder into
+   the Terminal window (it fills in the path), and press Return.
+
+   The first time, it installs Apple-platform support for .NET and asks for your Mac
+   password (it's installing developer tools; nothing is typed back on screen).
+   Then it builds. "Done" appears at the end and a Finder window opens on the
+   "Mac app" folder.
+
+4. Try it: double-click "DMAP Guide.app" in that folder.
+   - The book's cover appears; click it to open.
+   - The first time it says "Connect to the shared guide". Press Settings..., type your
+     name, press "Choose folder...", and pick the shared "DMAP Guide" folder in OneDrive
+     (in the Finder sidebar under OneDrive). Then "Use these settings".
+     If you don't have the shared folder, it's fine to stop here: the app opening at all
+     is the main check.
+
+5. Upload: copy "DMAP Guide for Mac.zip" from the "Mac app" folder into the shared
+   "DMAP Guide" folder in OneDrive, next to "DMAP Guide.exe" and "READ ME.txt".
+   (Not "DMAP Guide.app" by itself: OneDrive can damage app bundles; the zip is safe.)
+   Then tell whoever sent you this kit that it's there.
+
+
+6. OPTIONAL: SIGN IT, SO OTHER MACS OPEN IT WITHOUT A WARNING
+--------------------------------------------------------------
+Without signing, the app works, but every other Mac blocks it the first time: each person
+has to allow it once in System Settings > Privacy & Security > "Open Anyway" (Apple:
+https://support.apple.com/en-us/102445). READ ME.txt in the shared folder explains this
+to them.
+
+With a paid Apple Developer account you can sign and notarize it so it just opens. This
+follows Microsoft's guide, which has the full detail and screenshots:
+https://learn.microsoft.com/en-us/dotnet/maui/mac-catalyst/deployment/publish-outside-app-store?view=net-maui-10.0
+
+  a. In your developer account, create a "Developer ID Application" certificate, an App ID
+     with the bundle ID   com.dmapguide.desktop   and a "Developer ID" provisioning
+     profile for Mac Catalyst using both. In Xcode > Settings > Accounts, download the
+     profiles. (Sections "Create a developer ID application certificate" to "Download your
+     provisioning profile in Xcode" in the guide above.)
+  b. Build signed, putting in your certificate's full name from Keychain Access and the
+     profile's name:
+        DMAP_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" DMAP_SIGN_PROFILE="Profile name" bash "Build Mac App.command"
+  c. Notarize the zip and staple the result (an app-specific password is made at
+     appleid.apple.com):
+        xcrun notarytool submit "Mac app/DMAP Guide for Mac.zip" --wait --apple-id you@example.com --password app-specific-password --team-id TEAMID
+        xcrun stapler staple "Mac app/DMAP Guide.app"
+        rm "Mac app/DMAP Guide for Mac.zip"
+        ditto -c -k --keepParent "Mac app/DMAP Guide.app" "Mac app/DMAP Guide for Mac.zip"
+     Then upload the new zip as in step 5.
+
+
+IF SOMETHING GOES WRONG
+-----------------------
+- "STOPPED: ..." messages say what's missing (Xcode, .NET 10) and how to fix it.
+- If the build fails, select everything in the Terminal window (Cmd+A, Cmd+C), paste it
+  into an email or a text file, and send it back. That's all that's needed to fix it.
+- If "DMAP Guide.app" won't open on your own Mac, right-click it > Open, or System
+  Settings > Privacy & Security > Open Anyway.
+- If you double-click "Build Mac App.command" and it says you don't have permission, use
+  the Terminal way in step 3 instead.
+
+
+UPDATES
+-------
+When the Windows app gets a new version, you'll be sent a new kit (it carries the version
+number). Build it the same way and replace "DMAP Guide for Mac.zip" in the shared folder.
+The Mac app shows the same version number as the Windows app, in its Settings page.
+
+
+WHAT'S IN THE KIT (for the curious)
+-----------------------------------
+DmapShared   - the guide's pages and logic, shared with the Windows app
+DmapAndroid  - the Mac (and paused Android phone) app; Platforms/MacCatalyst is the Mac part
+DmapGuide    - only the Windows app's fonts, pictures and version number, which the Mac app uses

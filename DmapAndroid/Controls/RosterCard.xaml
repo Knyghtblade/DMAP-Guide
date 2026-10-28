@@ -7,6 +7,12 @@
              x:Class="DmapAndroid.Controls.RosterCard"
              x:DataType="m:CastMember">
     <Border Style="{StaticResource Card}" Padding="12" Margin="0,0,0,12">
+        <Border.Triggers>
+            <DataTrigger TargetType="Border" Binding="{Binding IsPointedAt}" Value="True">
+                <Setter Property="Stroke" Value="{StaticResource GoldColor}"/>
+                <Setter Property="StrokeThickness" Value="2.5"/>
+            </DataTrigger>
+        </Border.Triggers>
         <Grid ColumnDefinitions="112,*,Auto" ColumnSpacing="8">
             <VerticalStackLayout Spacing="6">
                 <c:Portrait ImagePath="{Binding ImagePath}" Size="104"/>
@@ -21,7 +27,15 @@
                             FontSize="14" TextColor="{StaticResource InkSoftColor}"/>
 
                 <Label Text="PLAYED BY" Style="{StaticResource FieldLabel}" Margin="2,8,0,0"/>
-                <c:InkEntry Text="{Binding PlayerName}" Placeholder="Cast member's real name" FontAttributes="Bold"/>
+                <!-- Reading: the actor's photo and name, opening them on the Cast page. Editing (or not on the Cast page): the name. -->
+                <c:LinkRow x:Name="ActorLink" Tapped="OnOpenActor" HorizontalOptions="Start">
+                    <HorizontalStackLayout Spacing="8">
+                        <c:Portrait ImagePath="{Binding Actor.ImagePath}" Size="30" VerticalOptions="Center"/>
+                        <Label Text="{Binding Actor.PlayerName}" FontFamily="DmapBody" FontAttributes="Bold" FontSize="15"
+                               TextDecorations="Underline" TextColor="{StaticResource InkColor}" VerticalOptions="Center"/>
+                    </HorizontalStackLayout>
+                </c:LinkRow>
+                <c:InkEntry x:Name="PlayerEntry" Text="{Binding PlayerName}" Placeholder="Cast member's real name" FontAttributes="Bold"/>
 
                 <Label Text="BIO" Style="{StaticResource FieldLabel}" Margin="2,8,0,0"/>
                 <c:InkEditor Text="{Binding CharacterDescription}" Placeholder="The character's story: backstory, personality, look…"/>
