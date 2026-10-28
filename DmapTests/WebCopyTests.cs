@@ -50,6 +50,19 @@ public class WebCopyTests
     }
 
     [Fact]
+    public void The_introduction_has_its_own_page()
+    {
+        var data = Guide();
+        Assert.Contains("No introduction yet.", WebCopy.Build(data, "1.0.9", DateTime.Now, _ => null));
+
+        data.Introduction = "Dungeon Masters is <a show>.\n\nSecond paragraph.";
+        string html = WebCopy.Build(data, "1.0.9", DateTime.Now, _ => null);
+        Assert.Contains("""id="s-intro">""", html);
+        Assert.Contains("""href="#intro">""", html);
+        Assert.Contains("<p>Dungeon Masters is &lt;a show&gt;.</p><p>Second paragraph.</p>", html);
+    }
+
+    [Fact]
     public void The_cast_and_the_characters_they_play_link_to_each_other()
     {
         var data = Guide();

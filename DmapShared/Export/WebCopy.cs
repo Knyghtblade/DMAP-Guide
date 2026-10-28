@@ -67,6 +67,7 @@ public static class WebCopy
                 <div class="toc-sub">The Production Guide</div>
                 <div class="flourish">— ❦ —</div>
               </div>
+              <a class="nav" href="#intro"><span class="glyph">❦</span>Introduction <small>- What is DMAP?</small></a>
               <a class="nav" href="#front"><span class="glyph">❧</span>Prologue</a>
               <a class="nav" href="#schedule"><span class="glyph">☾</span>Chronicle of Dates</a>
               <a class="nav" href="#cast"><span class="glyph">♞</span>Cast</a>
@@ -96,6 +97,7 @@ public static class WebCopy
             """);
 
         Front(w, data, show, asOf);
+        Introduction(w, data, show);
         Schedule(w, data);
         Cast(w, data, show);
         foreach (var season in data.Seasons)
@@ -174,6 +176,16 @@ public static class WebCopy
             <p>Choose a season, campaign or episode from the Table of Contents to open its page. Click a character or a cast member to see who plays whom.</p>
             <p class="note">This is a read-only copy of the guide, as it was on {H(made)}. Changes are made in the DMAP Guide app, and this copy is brought up to date when someone who made changes closes the app.</p>
             """);
+        w.Close();
+    }
+
+    // "Introduction - What is DMAP?": what the show is, for anyone new to it.
+    private static void Introduction(Writer w, ShowData data, string show)
+    {
+        w.Open("intro", show, "Introduction");
+        w.Raw("""<div class="subtitle">What is DMAP?</div>""");
+        if (string.IsNullOrWhiteSpace(data.Introduction)) w.Empty("No introduction yet.");
+        else w.Raw($"""<div class="prose">{Paras(data.Introduction)}</div>""");
         w.Close();
     }
 
@@ -584,6 +596,8 @@ public static class WebCopy
         .js .page{display:none}.js .page.current{display:block}
         .page{max-width:960px}
         .kicker{font:12px Cinzel,serif;letter-spacing:.15em;text-transform:uppercase;color:var(--faded)}
+        .subtitle{font:20px Cinzel,serif;color:var(--soft);margin:-4px 0 6px 2px}
+        .nav small{font-size:.85em;font-weight:normal}
         h1{font:700 34px/1.2 "Cinzel Decorative","Palatino Linotype",serif;color:var(--rubric);margin:4px 0 0}
         h2{font:700 19px Cinzel,serif;color:var(--soft);border-bottom:1px solid var(--gold);padding-bottom:3px;margin:28px 0 12px}
         h2::before{content:"✦ ";color:var(--gold);font-size:14px}
