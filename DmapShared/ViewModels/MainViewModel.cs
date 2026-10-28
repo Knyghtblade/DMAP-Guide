@@ -29,6 +29,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(Breadcrumb))]
     [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyPropertyChangedFor(nameof(IsOnIntroduction))]
     [NotifyPropertyChangedFor(nameof(IsOnPrologue))]
     [NotifyPropertyChangedFor(nameof(IsOnSchedule))]
     [NotifyPropertyChangedFor(nameof(IsOnCast))]
@@ -36,6 +37,7 @@ public partial class MainViewModel : ObservableObject
     private object? _currentPage;
 
     // Which of the fixed pages is open (for highlighting its link in the menu).
+    public bool IsOnIntroduction => CurrentPage is IntroductionViewModel;
     public bool IsOnPrologue => CurrentPage is PrologueViewModel;
     public bool IsOnSchedule => CurrentPage is ScheduleViewModel;
     public bool IsOnCast => CurrentPage is CastPageViewModel;
@@ -70,8 +72,8 @@ public partial class MainViewModel : ObservableObject
 
     public bool UsesServer => _store is ServerGuideStore;
 
-    /// <summary>Season, campaign, episode, Characters and Shoot Notes pages, plus the Cast page (part of the show-wide details).</summary>
-    public bool CanEdit => IsConnected && !IsReadOnly && CurrentPage is TreeNode or CastPageViewModel;
+    /// <summary>Season, campaign, episode, Characters and Shoot Notes pages, plus the Cast and Introduction pages (part of the show-wide details).</summary>
+    public bool CanEdit => IsConnected && !IsReadOnly && CurrentPage is TreeNode or CastPageViewModel or IntroductionViewModel;
 
     /// <summary>Adding and deleting pages.</summary>
     public bool CanChangePages => IsConnected && !IsReadOnly;
@@ -327,6 +329,7 @@ public partial class MainViewModel : ObservableObject
         Season s => s.DisplayName,
         ScheduleViewModel => "Chronicle of Dates",
         CastPageViewModel => "Cast",
+        IntroductionViewModel => "Introduction",
         SettingsViewModel => "Settings",
         GuideUnavailablePage => "",
         _ => "Prologue"
@@ -352,7 +355,7 @@ public partial class MainViewModel : ObservableObject
         if (target is Episode episode) episode.RefreshCast();
         if (target is CastPageViewModel cast) cast.RefreshAppearances();
 
-        // The Prologue and Cast pages are edited on their own; leaving them ends editing.
+        // The Prologue, Cast and Introduction pages are edited on their own; leaving them ends editing.
         if (IsEditing && CurrentPage is not TreeNode) IsEditing = false;
 
         CurrentPage = target;
@@ -383,6 +386,7 @@ public partial class MainViewModel : ObservableObject
         await ShowPageInfoAsync();
     }
 
+    [RelayCommand] private Task ShowIntroductionAsync() => NavigateAsync(new IntroductionViewModel(this));
     [RelayCommand] private Task ShowPrologueAsync() => NavigateAsync(new PrologueViewModel(this));
     [RelayCommand] private Task ShowScheduleAsync() => NavigateAsync(new ScheduleViewModel(this));
     [RelayCommand] private Task ShowCastAsync() => NavigateAsync(new CastPageViewModel(this));
@@ -530,7 +534,7 @@ public partial class MainViewModel : ObservableObject
 
     /// <summary>
     /// The saved page the current page edits (the Characters page belongs to its campaign,
-    /// Shoot Notes to their episode). Null for the Prologue and Cast pages, which edit the
+    /// Shoot Notes to their episode). Null for the Prologue, Cast and Introduction pages, which edit the
     /// show-wide record.
     /// </summary>
     private TreeNode? EditTarget => CurrentPage switch
@@ -545,6 +549,7 @@ public partial class MainViewModel : ObservableObject
     private (Guid Id, string Name)? LockTarget => CurrentPage switch
     {
         CastPageViewModel => (GuideRecords.GuideLockId, "the Cast page"),
+        IntroductionViewModel => (GuideRecords.IntroductionLockId, "the Introduction"),
         _ when EditTarget is TreeNode n => (n.Id, $"\"{n.DisplayName}\""),
         _ => null
     };

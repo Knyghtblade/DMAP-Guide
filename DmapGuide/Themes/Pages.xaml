@@ -475,6 +475,22 @@
     </DataTemplate>
 
     <!-- ============================================================
+         INTRODUCTION (what the show is, for anyone new to it)
+    ============================================================ -->
+    <DataTemplate DataType="{x:Type vm:IntroductionViewModel}">
+        <StackPanel Margin="4,0,12,30">
+            <TextBlock Style="{StaticResource PageKicker}" Text="{Binding Main.Data.ShowName}"/>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Introduction"/>
+            <TextBlock FontFamily="{StaticResource HeadingFont}" FontSize="20" Foreground="{StaticResource InkSoftBrush}"
+                       Margin="2,0,0,0" Text="What is DMAP?"/>
+            <TextBlock Style="{StaticResource Flourish}"/>
+
+            <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding Main.Data.Introduction}" MinHeight="320"
+                     Tag="No introduction yet. Press Edit Page to write one."/>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ============================================================
          SHOOT NOTES (an episode's notes from the day of filming)
     ============================================================ -->
     <DataTemplate DataType="{x:Type m:ShootNotesPage}">

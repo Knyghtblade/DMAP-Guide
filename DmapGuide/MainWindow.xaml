@@ -103,6 +103,24 @@
 
                             <TextBlock Style="{StaticResource Flourish}"/>
 
+                            <Button Command="{Binding ShowIntroductionCommand}">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource NavLink}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsOnIntroduction}" Value="True">
+                                                <Setter Property="Background" Value="#55C9A24A"/>
+                                                <Setter Property="Foreground" Value="{StaticResource RubricBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="❦" FontFamily="{StaticResource SymbolFont}" Foreground="{StaticResource GoldBrush}" Margin="0,0,10,0"/>
+                                    <TextBlock FontFamily="{StaticResource HeadingFont}" FontWeight="Bold" FontSize="15">
+                                        <Run Text="Introduction"/><Run Text=" - What is DMAP?" FontWeight="Normal" FontSize="13"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Button>
                             <Button Command="{Binding ShowPrologueCommand}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource NavLink}">

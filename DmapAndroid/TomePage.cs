@@ -147,6 +147,7 @@ public sealed class TomePage : ContentPage
                 new Image { Source = TomeImages.Logo(), WidthRequest = 110, HeightRequest = 40, Aspect = Aspect.AspectFit, HorizontalOptions = LayoutOptions.Center },
                 new Label { Text = "The Production Guide", FontFamily = "DmapDisplay", FontSize = 12, TextColor = Tome.Rubric, HorizontalTextAlignment = TextAlignment.Center },
                 new Label { Style = AppStyle("Flourish") },
+                SideLink("❦", "Introduction - What is DMAP?", () => _vm.ShowIntroductionCommand.Execute(null)),
                 SideLink("❧", "Prologue", () => _vm.ShowPrologueCommand.Execute(null)),
                 SideLink("☾", "Chronicle of Dates", () => _vm.ShowScheduleCommand.Execute(null)),
                 SideLink("⚙", "Settings", () => _vm.ShowSettingsCommand.Execute(null)),
@@ -296,6 +297,7 @@ public sealed class TomePage : ContentPage
             Campaign => new CampaignView(),
             Season => new SeasonView(),
             ScheduleViewModel => new ScheduleView(),
+            IntroductionViewModel => new IntroductionView(),
             SettingsViewModel => new SettingsView(),
             GuideUnavailablePage => new UnavailableView(),
             _ => new PrologueView()

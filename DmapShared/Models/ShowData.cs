@@ -9,6 +9,9 @@ public partial class ShowData : ObservableObject
 {
     [ObservableProperty] private string _showName = "Dungeon Masters";
 
+    /// <summary>The "Introduction - What is DMAP?" page: what the show is, for anyone new to it.</summary>
+    [ObservableProperty] private string _introduction = "";
+
     /// <summary>The show's Dungeon Masters (the "Cast" page). Campaign and episode pages pick from these.</summary>
     public ObservableCollection<CastMember> DungeonMasters { get; set; } = new();
 

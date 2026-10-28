@@ -260,6 +260,45 @@ public class ViewModelTests
     }
 
     [Fact]
+    public async Task The_introduction_is_edited_on_its_own_and_reaches_everyone_sharing_the_folder()
+    {
+        var folder = TempFolder.Create("intro");
+        async Task<MainViewModel> Open(string name)
+        {
+            var vm = new MainViewModel(new FakePlatform { SupportsServer = false },
+                new FakeSettings(new GuideSettings { UserName = name, DataFolder = folder }));
+            await vm.StartAsync();
+            return vm;
+        }
+        var paul = await Open("Paul");
+        var colleague = await Open("Jo");
+
+        await paul.ShowIntroductionCommand.ExecuteAsync(null);
+        Assert.IsType<IntroductionViewModel>(paul.CurrentPage);
+        Assert.True(paul.IsOnIntroduction);
+        Assert.Equal("Introduction", paul.Breadcrumb);
+        Assert.True(paul.CanEdit);
+
+        await paul.ToggleEditCommand.ExecuteAsync(null);
+        Assert.True(paul.IsEditing);
+        paul.Data.Introduction = "Dungeon Masters is a show about...\n\nSecond paragraph.";
+        await paul.ToggleEditCommand.ExecuteAsync(null);
+        await paul.SaveAsync();
+
+        Assert.True(await colleague.SyncNowAsync());
+        Assert.Equal("Dungeon Masters is a show about...\n\nSecond paragraph.", colleague.Data.Introduction);
+
+        var reopened = await Open("Sam");
+        Assert.Equal("Dungeon Masters is a show about...\n\nSecond paragraph.", reopened.Data.Introduction);
+
+        // Leaving the page ends editing, like the Cast page.
+        await paul.ToggleEditCommand.ExecuteAsync(null);
+        await paul.ShowPrologueCommand.ExecuteAsync(null);
+        Assert.False(paul.IsEditing);
+        Assert.False(paul.IsOnIntroduction);
+    }
+
+    [Fact]
     public async Task Guest_stars_come_from_the_cast_page_and_are_ticked_on_episodes()
     {
         using var server = new TestServer();

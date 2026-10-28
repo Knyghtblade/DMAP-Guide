@@ -26,6 +26,9 @@ public static class GuideRecords
     /// </summary>
     public static readonly Guid GuideLockId = new("00000000-0000-0000-0000-00000000da7a");
 
+    /// <summary>The same for the Introduction page, which also edits the show-wide record.</summary>
+    public static readonly Guid IntroductionLockId = new("00000000-0000-0000-0000-00000000da7b");
+
     /// <summary>Child lists live in their own records.</summary>
     private static readonly string[] ChildLists = { "Seasons", "Campaigns", "Episodes" };
 
