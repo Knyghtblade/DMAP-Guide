@@ -51,6 +51,8 @@ Do the technical work; describe the result and what to do next. Anything written
   box kept in the show-wide record, its own edit lock), on Windows, Mac and in the web copy.
   It came from GitHub, where another PC had branched before 1.0.3 and also made its own Cast ↔
   Characters links; the merge kept this PC's links and took only the Introduction commit (ad876ed).
+  That other PC had also put its own build (1.0.5+ad876ed, without 1.0.3–1.0.8) into the shared
+  folder on 27 Oct; 1.0.9 replaced it on 28 Oct. Always pull before publishing from any PC.
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe
