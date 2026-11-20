@@ -538,6 +538,44 @@
     </DataTemplate>
 
     <!-- ============================================================
+         HOT SHEETS (an episode's Hot Sheets, read in from a PDF)
+    ============================================================ -->
+    <DataTemplate DataType="{x:Type m:HotSheetsPage}">
+        <StackPanel Margin="4,0,12,30">
+            <TextBlock Style="{StaticResource PageKicker}">
+                <Run Text="{Binding Episode.Campaign.DisplayName, Mode=OneWay}"/><Run Text="  ›  "/><Run Text="{Binding Episode.DisplayName, Mode=OneWay}"/>
+            </TextBlock>
+            <TextBlock Style="{StaticResource PageTitle}" Text="Hot Sheets"/>
+            <TextBlock Style="{StaticResource Flourish}"/>
+
+            <TextBlock Style="{StaticResource Body}" FontSize="16" FontStyle="Italic" Foreground="{StaticResource InkSoftBrush}"
+                       Margin="2,0,0,8"
+                       Text="The Hot Sheets for this episode, copied in from the PDF. Press Edit Page to add a PDF, correct the text, or clear it."/>
+
+            <!-- Which PDF(s) it came from -->
+            <TextBlock Style="{StaticResource Body}" FontSize="14" FontStyle="Italic" Foreground="{StaticResource InkFadedBrush}"
+                       Margin="2,0,0,8" Text="{Binding Episode.HotSheetsSource}"
+                       Visibility="{Binding Episode.HotSheetsSource, Converter={StaticResource EmptyToCollapsed}}"/>
+
+            <StackPanel Orientation="Horizontal" Margin="-12,0,0,12">
+                <Button Style="{StaticResource AddButton}" Content="+ Add Hot Sheets PDF…"
+                        Command="{Binding DataContext.AddHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding Episode}"/>
+                <Button Style="{StaticResource AddButton}" Content="✕ Clear Hot Sheets"
+                        Command="{Binding DataContext.ClearHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                        CommandParameter="{Binding Episode}"/>
+            </StackPanel>
+
+            <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding Episode.HotSheets}" MinHeight="320"
+                     Tag="No Hot Sheets yet. Press Edit Page, then + Add Hot Sheets PDF."/>
+
+            <Button Style="{StaticResource TomeButton}" Content="← Back to the episode" HorizontalAlignment="Left" Margin="0,18,0,0"
+                    Command="{Binding DataContext.CloseHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                    CommandParameter="{Binding}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- ============================================================
          EPISODE PAGE
     ============================================================ -->
     <DataTemplate DataType="{x:Type m:Episode}">
@@ -545,10 +583,16 @@
             <TextBlock Style="{StaticResource PageKicker}" Text="{Binding Campaign.DisplayName}"/>
 
             <DockPanel Margin="0,2,0,0">
-                <Button DockPanel.Dock="Right" Style="{StaticResource TomeButton}" Content="✎  Shoot Notes" Margin="0" VerticalAlignment="Center"
-                        ToolTip="Notes on what happened while this episode was filmed"
-                        Command="{Binding DataContext.OpenShootNotesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                        CommandParameter="{Binding}"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Style="{StaticResource TomeButton}" Content="✎  Shoot Notes" Margin="0,0,8,0"
+                            ToolTip="Notes on what happened while this episode was filmed"
+                            Command="{Binding DataContext.OpenShootNotesCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"/>
+                    <Button Style="{StaticResource TomeButton}" Content="📄  Hot Sheets" Margin="0"
+                            ToolTip="This episode's Hot Sheets, copied in from the PDF"
+                            Command="{Binding DataContext.OpenHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding}"/>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="EPISODE" Style="{StaticResource FieldLabel}" FontSize="15" VerticalAlignment="Center"/>
                     <TextBox Style="{StaticResource InkBox}" Text="{Binding Number}" MinWidth="44" Margin="4,0,10,0"

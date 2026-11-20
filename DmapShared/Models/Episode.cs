@@ -54,9 +54,19 @@ public partial class Episode : TreeNode
     /// <summary>The "Shoot Notes" page opened from the episode (not saved on its own; the notes live on the episode).</summary>
     [JsonIgnore] public ShootNotesPage ShootNotesPage { get; }
 
+    /// <summary>The words from this episode's Hot Sheets PDF, kept (and editable) on its own Hot Sheets page.</summary>
+    [ObservableProperty] private string _hotSheets = "";
+
+    /// <summary>Where the Hot Sheets came from, e.g. "Ep 301 Hot Sheets.pdf · added 20 Nov 2026 by Paul". Blank once cleared.</summary>
+    [ObservableProperty] private string _hotSheetsSource = "";
+
+    /// <summary>The "Hot Sheets" page opened from the episode (not saved on its own; the text lives on the episode).</summary>
+    [JsonIgnore] public HotSheetsPage HotSheetsPage { get; }
+
     public Episode()
     {
         ShootNotesPage = new ShootNotesPage(this);
+        HotSheetsPage = new HotSheetsPage(this);
     }
 
     /// <summary>Which of the campaign's characters are in this episode.</summary>
@@ -185,15 +195,28 @@ public partial class Episode : TreeNode
     }
 }
 
-/// <summary>Page node for an episode's shoot notes (not saved; the notes live on the episode).</summary>
-public class ShootNotesPage : TreeNode
+/// <summary>A page opened from an episode whose contents live on the episode (Shoot Notes, Hot Sheets). Not saved on its own.</summary>
+public abstract class EpisodeSubPage : TreeNode
 {
     public Episode Episode { get; }
 
-    public ShootNotesPage(Episode episode) => Episode = episode;
+    protected EpisodeSubPage(Episode episode) => Episode = episode;
 
-    public override string DisplayName => "Shoot Notes";
     public override TreeNode? ParentNode => Episode;
+}
+
+/// <summary>Page node for an episode's shoot notes.</summary>
+public class ShootNotesPage : EpisodeSubPage
+{
+    public ShootNotesPage(Episode episode) : base(episode) { }
+    public override string DisplayName => "Shoot Notes";
+}
+
+/// <summary>Page node for an episode's Hot Sheets (the text read from the Hot Sheets PDF).</summary>
+public class HotSheetsPage : EpisodeSubPage
+{
+    public HotSheetsPage(Episode episode) : base(episode) { }
+    public override string DisplayName => "Hot Sheets";
 }
 
 /// <summary>A character and the cast member who plays them (campaign cast list, a guest star, or the show's cast).</summary>

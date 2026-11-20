@@ -53,6 +53,11 @@ Do the technical work; describe the result and what to do next. Anything written
   Characters links; the merge kept this PC's links and took only the Introduction commit (ad876ed).
   That other PC had also put its own build (1.0.5+ad876ed, without 1.0.3–1.0.8) into the shared
   folder on 27 Oct; 1.0.9 replaced it on 28 Oct. Always pull before publishing from any PC.
+- 1.0.10 (20 Nov): **Hot Sheets** page per episode (button beside Shoot Notes). While editing,
+  "+ Add Hot Sheets PDF…" opens a drop-or-choose window; PdfPig (`DmapShared\PdfText.cs`) reads
+  the typed text onto the page, where it can be corrected; "Clear Hot Sheets" empties it. Made on
+  the `hot-sheets` branch (from 1.0.9) on another PC and merged; this PC added the Mac screen
+  (`HotSheetsView`) and Hot Sheets on web-copy episode pages.
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe

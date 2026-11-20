@@ -335,7 +335,7 @@ public partial class MainViewModel : ObservableObject
     public string Breadcrumb => CurrentPage switch
     {
         Episode e => $"{e.Campaign?.Season?.DisplayName}  ›  {e.Campaign?.DisplayName}  ›  Episode {e.Number}",
-        ShootNotesPage n => $"{n.Episode.Campaign?.Season?.DisplayName}  ›  {n.Episode.Campaign?.DisplayName}  ›  Episode {n.Episode.Number}  ›  Shoot Notes",
+        EpisodeSubPage n => $"{n.Episode.Campaign?.Season?.DisplayName}  ›  {n.Episode.Campaign?.DisplayName}  ›  Episode {n.Episode.Number}  ›  {n.DisplayName}",
         Campaign c => $"{c.Season?.DisplayName}  ›  {c.DisplayName}",
         CastRosterPage r => $"{r.Campaign.Season?.DisplayName}  ›  {r.Campaign.DisplayName}  ›  Characters",
         Season s => s.DisplayName,
@@ -372,10 +372,10 @@ public partial class MainViewModel : ObservableObject
 
         CurrentPage = target;
 
-        // Keep the table of contents in step with the page (Shoot Notes highlight their episode).
+        // Keep the table of contents in step with the page (Shoot Notes and Hot Sheets highlight their episode).
         if (target is TreeNode node)
         {
-            var shown = node is ShootNotesPage notes ? notes.Episode : node;
+            var shown = node is EpisodeSubPage sub ? sub.Episode : node;
             for (var p = shown.ParentNode; p != null; p = p.ParentNode) p.IsExpanded = true;
             if (_selectedNode != null && _selectedNode != shown) _selectedNode.IsSelected = false;
             _selectedNode = shown;
@@ -404,6 +404,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand] private Task ShowCastAsync() => NavigateAsync(new CastPageViewModel(this));
     [RelayCommand] private Task OpenShootNotesAsync(Episode episode) => NavigateAsync(episode.ShootNotesPage);
     [RelayCommand] private Task CloseShootNotesAsync(ShootNotesPage page) => NavigateAsync(page.Episode);
+    [RelayCommand] private Task OpenHotSheetsAsync(Episode episode) => NavigateAsync(episode.HotSheetsPage);
+    [RelayCommand] private Task CloseHotSheetsAsync(HotSheetsPage page) => NavigateAsync(page.Episode);
     [RelayCommand] private Task ShowSettingsAsync() => NavigateAsync(new SettingsViewModel(this, _settings.Clone()));
 
     // ============================================================
@@ -553,7 +555,7 @@ public partial class MainViewModel : ObservableObject
     private TreeNode? EditTarget => CurrentPage switch
     {
         CastRosterPage r => r.Campaign,
-        ShootNotesPage n => n.Episode,
+        EpisodeSubPage n => n.Episode,
         TreeNode n => n,
         _ => null
     };
@@ -778,7 +780,7 @@ public partial class MainViewModel : ObservableObject
             Campaign c => c.Season,
             CastRosterPage r => r.Campaign.Season,
             Episode e => e.Campaign?.Season,
-            ShootNotesPage n => n.Episode.Campaign?.Season,
+            EpisodeSubPage n => n.Episode.Campaign?.Season,
             _ => null
         } ?? Data.Seasons.LastOrDefault();
 
@@ -809,7 +811,7 @@ public partial class MainViewModel : ObservableObject
             Campaign c => c,
             CastRosterPage r => r.Campaign,
             Episode e => e.Campaign,
-            ShootNotesPage n => n.Episode.Campaign,
+            EpisodeSubPage n => n.Episode.Campaign,
             Season s => s.Campaigns.LastOrDefault(),
             _ => null
         } ?? Data.AllCampaigns.LastOrDefault();
@@ -852,12 +854,12 @@ public partial class MainViewModel : ObservableObject
     private async Task DeleteCurrentAsync()
     {
         if (!CanChangePages) return;
-        if (CurrentPage is not TreeNode node || node is CastRosterPage or ShootNotesPage)
+        if (CurrentPage is not TreeNode node || node is CastRosterPage or EpisodeSubPage)
         {
             await _platform.AlertAsync("DMAP Guide", CurrentPage switch
             {
                 CastRosterPage => "The Characters page belongs to its campaign and can't be deleted. To remove a character, press Edit Page and use the ✕ on their card.",
-                ShootNotesPage => "Shoot Notes belong to their episode and can't be deleted on their own. Open the episode to delete it.",
+                EpisodeSubPage sub => $"{sub.DisplayName} belong to their episode and can't be deleted on their own. Open the episode to delete it." + (sub is HotSheetsPage ? " To remove just the Hot Sheets, press Edit Page, then Clear Hot Sheets." : ""),
                 _ => "Open the season, campaign or episode you want to delete first."
             });
             return;
@@ -1032,6 +1034,77 @@ public partial class MainViewModel : ObservableObject
         {
             await _platform.AlertAsync("DMAP Guide", $"The link couldn't be opened:\n{Friendly(ex)}");
         }
+    }
+
+    // ============================================================
+    // HOT SHEETS (the words from an episode's Hot Sheets PDF)
+    // ============================================================
+    [RelayCommand]
+    private async Task AddHotSheetsAsync(Episode episode)
+    {
+        if (!IsEditing) return;
+        string? file = await _platform.PickPdfAsync(
+            "Add Hot Sheets",
+            $"Drop the Hot Sheets PDF for {episode.DisplayName} here, or press Choose PDF…");
+        if (file == null) return;
+
+        string text;
+        try
+        {
+            StatusText = "Reading the PDF…";
+            text = await Task.Run(() => PdfText.Read(file));
+        }
+        catch (Exception ex)
+        {
+            StatusText = "";
+            await _platform.AlertAsync("Add Hot Sheets", $"That PDF couldn't be read:\n{Friendly(ex)}");
+            return;
+        }
+        StatusText = "";
+
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            await _platform.AlertAsync("Add Hot Sheets",
+                "No words could be found in that PDF. It may be a scan or a picture of the page rather than typed text, " +
+                "so there's nothing to copy across. Try exporting the Hot Sheets to PDF again from the program they were made in.");
+            return;
+        }
+
+        // Already has Hot Sheets: replace them, or add the new ones underneath.
+        bool replace = true;
+        if (!string.IsNullOrWhiteSpace(episode.HotSheets))
+            replace = await _platform.AskAsync("Add Hot Sheets",
+                "This episode already has Hot Sheets. Replace them with this PDF, or add this PDF underneath?",
+                "Replace", "Add underneath");
+
+        string source = $"{Path.GetFileName(file)} · added {DateTime.Now:d MMM yyyy}" +
+                        (string.IsNullOrWhiteSpace(UserName) ? "" : $" by {UserName}");
+        if (replace)
+        {
+            episode.HotSheets = text;
+            episode.HotSheetsSource = source;
+        }
+        else
+        {
+            episode.HotSheets = episode.HotSheets.TrimEnd() + "\n\n" + text;
+            episode.HotSheetsSource = episode.HotSheetsSource + "\n" + source;
+        }
+
+        await SaveAsync();
+        StatusText = "Hot Sheets added. Check them over, then press ✓ Done.";
+    }
+
+    [RelayCommand]
+    private async Task ClearHotSheetsAsync(Episode episode)
+    {
+        if (!IsEditing || string.IsNullOrWhiteSpace(episode.HotSheets) && string.IsNullOrWhiteSpace(episode.HotSheetsSource)) return;
+        if (!await _platform.AskAsync("Clear Hot Sheets",
+                $"Remove all the Hot Sheets from {episode.DisplayName}? This can't be undone, but you can add the PDF again.",
+                "Clear", "Cancel"))
+            return;
+        episode.HotSheets = "";
+        episode.HotSheetsSource = "";
+        await SaveAsync();
     }
 
     // ============================================================

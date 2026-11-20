@@ -50,6 +50,16 @@ public class WebCopyTests
     }
 
     [Fact]
+    public void Hot_sheets_show_on_their_episode()
+    {
+        var data = Guide();
+        data.AllCampaigns.Last().Episodes[0].HotSheets = "CALL TIME 7:00 <am>";
+        string html = WebCopy.Build(data, "1.0.10", DateTime.Now, _ => null);
+        Assert.Contains("<h2>Hot Sheets</h2>", html);
+        Assert.Contains("<p>CALL TIME 7:00 &lt;am&gt;</p>", html);
+    }
+
+    [Fact]
     public void The_introduction_has_its_own_page()
     {
         var data = Guide();

@@ -480,6 +480,90 @@ public class ViewModelTests
         Assert.Equal("The dragon prop caught fire.", saved.AllEpisodes.Single(e => e.Id == episode.Id).ShootNotes);
     }
 
+    /// <summary>Makes a small typed PDF, like a real Hot Sheets export.</summary>
+    private static string MakePdf(string name, params string[] lines)
+    {
+        var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(UglyToad.PdfPig.Fonts.Standard14Fonts.Standard14Font.Helvetica);
+        var page = builder.AddPage(UglyToad.PdfPig.Content.PageSize.A4);
+        double y = 780;
+        foreach (var line in lines)
+        {
+            page.AddText(line, 12, new UglyToad.PdfPig.Core.PdfPoint(50, y), font);
+            y -= 20;
+        }
+        string path = Path.Combine(TempFolder.Create("pdf"), name);
+        File.WriteAllBytes(path, builder.Build());
+        return path;
+    }
+
+    [Fact]
+    public async Task Hot_sheets_pdf_text_is_added_to_the_episode_and_can_be_replaced_or_cleared()
+    {
+        using var server = new TestServer();
+        var (vm, platform) = await Connected(server);
+        var episode = vm.Data.AllEpisodes.First();
+
+        await vm.OpenHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Same(episode.HotSheetsPage, vm.CurrentPage);
+        Assert.EndsWith("Hot Sheets", vm.Breadcrumb);
+        Assert.True(episode.IsSelected);
+
+        // Only while editing.
+        platform.PdfToPick = MakePdf("Ep 101 Hot Sheets.pdf", "Call time 7:00 AM", "Stage B");
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Equal("", episode.HotSheets);
+
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Contains("Call time 7:00 AM", episode.HotSheets);
+        Assert.Contains("Stage B", episode.HotSheets);
+        Assert.StartsWith("Ep 101 Hot Sheets.pdf · added", episode.HotSheetsSource);
+
+        // A second PDF: "Add underneath" keeps both.
+        platform.Answer = false;
+        platform.PdfToPick = MakePdf("Revised.pdf", "Wrap 6:00 PM");
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Contains("Call time 7:00 AM", episode.HotSheets);
+        Assert.Contains("Wrap 6:00 PM", episode.HotSheets);
+
+        // "Replace" swaps them out.
+        platform.Answer = true;
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+        Assert.DoesNotContain("Call time", episode.HotSheets);
+        Assert.StartsWith("Revised.pdf", episode.HotSheetsSource);
+
+        // Edited by hand, then saved for everyone.
+        episode.HotSheets += "\nBring the dragon.";
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        await vm.SaveAsync();
+        var check = new DmapShared.Storage.ServerGuideStore(server.Client(), "Check", TempFolder.Create("c"));
+        var saved = (await check.LoadAsync()).Data.AllEpisodes.Single(e => e.Id == episode.Id);
+        Assert.Contains("Bring the dragon.", saved.HotSheets);
+        Assert.StartsWith("Revised.pdf", saved.HotSheetsSource);
+
+        // Cleared.
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        await vm.ClearHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Equal("", episode.HotSheets);
+        Assert.Equal("", episode.HotSheetsSource);
+    }
+
+    [Fact]
+    public async Task A_pdf_with_no_words_is_explained_and_changes_nothing()
+    {
+        using var server = new TestServer();
+        var (vm, platform) = await Connected(server);
+        var episode = vm.Data.AllEpisodes.First();
+        await vm.OpenHotSheetsCommand.ExecuteAsync(episode);
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+
+        platform.PdfToPick = MakePdf("Scan.pdf");
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Equal("", episode.HotSheets);
+        Assert.Contains(platform.Alerts, a => a.Contains("No words could be found"));
+    }
+
     [Fact]
     public async Task Delete_on_a_page_that_is_not_a_season_campaign_or_episode_deletes_nothing()
     {
@@ -613,6 +697,8 @@ public class ViewModelTests
         public Task<string?> PickImageAsync() => Task.FromResult<string?>(null);
         public string? PickedFolder { get; set; }
         public Task<string?> PickFolderAsync(string title, string? startIn) => Task.FromResult(PickedFolder);
+        public string? PdfToPick { get; set; }
+        public Task<string?> PickPdfAsync(string title, string prompt) => Task.FromResult(PdfToPick);
         public void BeginInvoke(Action action) => action();
         public List<string> Links { get; } = new();
         public void OpenLink(string url) => Links.Add(url);

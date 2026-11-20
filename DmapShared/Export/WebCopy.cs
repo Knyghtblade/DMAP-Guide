@@ -361,6 +361,7 @@ public static class WebCopy
 
         w.Text("Production Notes", e.ProductionNotes);
         w.Text("Shoot Notes", e.ShootNotes);
+        w.Text("Hot Sheets", e.HotSheets);
         w.Close();
     }
 

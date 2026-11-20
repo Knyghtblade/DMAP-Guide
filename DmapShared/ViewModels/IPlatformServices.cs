@@ -20,6 +20,9 @@ public interface IPlatformServices
     /// <summary>Let the user choose a picture; returns a file this app can read, or null.</summary>
     Task<string?> PickImageAsync();
 
+    /// <summary>Let the user drop in or choose a PDF; returns its file, or null if cancelled.</summary>
+    Task<string?> PickPdfAsync(string title, string prompt);
+
     /// <summary>Let the user choose a folder; null if cancelled (or not supported).</summary>
     Task<string?> PickFolderAsync(string title, string? startIn);
 

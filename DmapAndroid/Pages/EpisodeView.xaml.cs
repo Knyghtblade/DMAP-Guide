@@ -16,6 +16,7 @@ public partial class EpisodeView : ContentView
     }
 
     private void OnOpenShootNotes(object? sender, EventArgs e) => AppState.Main.OpenShootNotesCommand.Execute(Episode);
+    private void OnOpenHotSheets(object? sender, EventArgs e) => AppState.Main.OpenHotSheetsCommand.Execute(Episode);
     private void OnOpenLink(object? sender, EventArgs e) => AppState.Main.OpenLinkCommand.Execute((ItemOf(sender!) as AirDate)?.Link);
     private void OnAddKeyMoment(object? sender, EventArgs e) => AppState.Main.AddKeyMomentCommand.Execute(Episode);
     private void OnAddAirDate(object? sender, EventArgs e) => AppState.Main.AddAirDateCommand.Execute(Episode);

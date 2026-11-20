@@ -302,6 +302,7 @@ public sealed class TomePage : ContentPage
         {
             Episode => new EpisodeView(),
             ShootNotesPage => new ShootNotesView(),
+            HotSheetsPage => new HotSheetsView(),
             CastPageViewModel => new CastView(),
             CastRosterPage => new RosterView(),
             Campaign => new CampaignView(),

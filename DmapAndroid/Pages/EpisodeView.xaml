@@ -187,6 +187,9 @@
         <c:InkEditor Text="{Binding ProductionNotes}" Placeholder="Planning notes, props, reminders, schedule changes…"/>
 
         <!-- Shoot notes live on their own page -->
-        <c:TomeButton Text="Shoot Notes →" Margin="0,14,0,0" HorizontalOptions="Start" Clicked="OnOpenShootNotes"/>
+        <HorizontalStackLayout Spacing="8" Margin="0,14,0,0">
+            <c:TomeButton Text="Shoot Notes →" Clicked="OnOpenShootNotes"/>
+            <c:TomeButton Text="Hot Sheets →" Clicked="OnOpenHotSheets"/>
+        </HorizontalStackLayout>
     </VerticalStackLayout>
 </ContentView>
