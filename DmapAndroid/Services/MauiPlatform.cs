@@ -42,6 +42,21 @@ public sealed class MauiPlatform : IPlatformServices
         return copy;
     }
 
+    public async Task<string?> PickPdfAsync(string title, string prompt)
+    {
+        var picked = await FilePicker.Default.PickAsync(new PickOptions { PickerTitle = title, FileTypes = FilePickerFileType.Pdf });
+        if (picked == null) return null;
+
+        // Copy it somewhere this app can always read, keeping its name (shown on the page).
+        string folder = Path.Combine(FileSystem.CacheDirectory, $"pdf-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(folder);
+        string copy = Path.Combine(folder, Path.GetFileName(picked.FileName));
+        await using (var source = await picked.OpenReadAsync())
+        await using (var target = File.Create(copy))
+            await source.CopyToAsync(target);
+        return copy;
+    }
+
     public Task<string?> PickFolderAsync(string title, string? startIn) => Task.FromResult<string?>(null);
 
     public void BeginInvoke(Action action) => MainThread.BeginInvokeOnMainThread(action);
