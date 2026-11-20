@@ -566,8 +566,75 @@
                         CommandParameter="{Binding Episode}"/>
             </StackPanel>
 
+            <!-- Laid out as in the PDF: title, bold lines, dividers and tables, all editable -->
+            <ItemsControl ItemsSource="{Binding Episode.HotSheetBlocks}" Focusable="False" Margin="0,4,0,0"
+                          Visibility="{Binding Episode.HasHotSheetsLayout, Converter={StaticResource BoolToVis}}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type m:HotSheetBlock}">
+                        <ContentControl Content="{Binding}" Focusable="False">
+                            <ContentControl.Style>
+                                <Style TargetType="ContentControl">
+                                    <Setter Property="ContentTemplate">
+                                        <Setter.Value>
+                                            <DataTemplate>
+                                                <TextBox Text="{Binding Text, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6">
+                                                    <TextBox.Style>
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource InkBoxMulti}">
+                                                            <Setter Property="FontSize" Value="16"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Style}" Value="Bold">
+                                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Style}" Value="Heading">
+                                                                    <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                    <Setter Property="FontSize" Value="19"/>
+                                                                </DataTrigger>
+                                                                <DataTrigger Binding="{Binding Style}" Value="Title">
+                                                                    <Setter Property="FontFamily" Value="{StaticResource HeadingFont}"/>
+                                                                    <Setter Property="FontWeight" Value="Bold"/>
+                                                                    <Setter Property="FontSize" Value="28"/>
+                                                                    <Setter Property="TextAlignment" Value="Center"/>
+                                                                    <Setter Property="Margin" Value="0,4,0,14"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBox.Style>
+                                                </TextBox>
+                                            </DataTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Rule">
+                                            <Setter Property="ContentTemplate">
+                                                <Setter.Value>
+                                                    <DataTemplate>
+                                                        <Border Height="1" Background="{StaticResource InkFadedBrush}" Margin="0,10,0,14"/>
+                                                    </DataTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Kind}" Value="Table">
+                                            <Setter Property="ContentTemplate">
+                                                <Setter.Value>
+                                                    <DataTemplate>
+                                                        <ctl:HotSheetTable/>
+                                                    </DataTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ContentControl.Style>
+                        </ContentControl>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Hot Sheets added before the layout was kept: just their words -->
             <TextBox Style="{StaticResource InkBoxMulti}" Text="{Binding Episode.HotSheets}" MinHeight="320"
-                     Tag="No Hot Sheets yet. Press Edit Page, then + Add Hot Sheets PDF."/>
+                     Tag="No Hot Sheets yet. Press Edit Page, then + Add Hot Sheets PDF."
+                     Visibility="{Binding Episode.HasHotSheetsLayout, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
 
             <Button Style="{StaticResource TomeButton}" Content="← Back to the episode" HorizontalAlignment="Left" Margin="0,18,0,0"
                     Command="{Binding DataContext.CloseHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"

@@ -60,6 +60,27 @@ public class WebCopyTests
     }
 
     [Fact]
+    public void Laid_out_hot_sheets_keep_their_title_dividers_and_tables()
+    {
+        var data = Guide();
+        var log = new HotSheetBlock { Kind = HotSheetBlockKind.Table, ColumnWidths = { 0.25, 0.75 } };
+        log.Rows.Add(new HotSheetRow { Cells = { new HotSheetCell { Text = "Day <1>", Span = 2, Bold = true, Align = HotSheetAlign.Center } } });
+        log.Rows.Add(new HotSheetRow { Shaded = true, Cells = { new HotSheetCell { Text = "11:33:05:12" }, new HotSheetCell { Text = "start\nof day" } } });
+        data.AllCampaigns.Last().Episodes[0].HotSheetBlocks = new()
+        {
+            HotSheetBlock.Paragraph("Dungeon Masters 501", HotSheetStyle.Title),
+            HotSheetBlock.Rule(),
+            log
+        };
+
+        string html = WebCopy.Build(data, "1.0.11", DateTime.Now, _ => null);
+        Assert.Contains("""<p class="t">Dungeon Masters 501</p><hr>""".Replace("><", ">\n<"), html);
+        Assert.Contains("""<col style="width:25.0%"><col style="width:75.0%">""", html);
+        Assert.Contains("""<td colspan="2" style="text-align:center" class="b" >Day &lt;1&gt;</td>""", html);
+        Assert.Contains("""<tr class="shade"><td >11:33:05:12</td><td >start<br>of day</td></tr>""", html);
+    }
+
+    [Fact]
     public void The_introduction_has_its_own_page()
     {
         var data = Guide();

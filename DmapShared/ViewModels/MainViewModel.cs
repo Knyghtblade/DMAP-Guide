@@ -485,6 +485,9 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        // Edits to laid-out Hot Sheets: keep their plain words in step.
+        foreach (var episode in Data.AllEpisodes) episode.RefreshHotSheetsText();
+
         CommitPendingEdits?.Invoke();
 
         await _gate.WaitAsync();
@@ -1048,11 +1051,11 @@ public partial class MainViewModel : ObservableObject
             $"Drop the Hot Sheets PDF for {episode.DisplayName} here, or press Choose PDF…");
         if (file == null) return;
 
-        string text;
+        List<HotSheetBlock> blocks;
         try
         {
             StatusText = "Reading the PDF…";
-            text = await Task.Run(() => PdfText.Read(file));
+            blocks = await Task.Run(() => HotSheetReader.Read(file));
         }
         catch (Exception ex)
         {
@@ -1062,6 +1065,7 @@ public partial class MainViewModel : ObservableObject
         }
         StatusText = "";
 
+        string text = HotSheetBlock.PlainText(blocks);
         if (string.IsNullOrWhiteSpace(text))
         {
             await _platform.AlertAsync("Add Hot Sheets",
@@ -1081,14 +1085,19 @@ public partial class MainViewModel : ObservableObject
                         (string.IsNullOrWhiteSpace(UserName) ? "" : $" by {UserName}");
         if (replace)
         {
-            episode.HotSheets = text;
+            episode.HotSheetBlocks = new(blocks);
             episode.HotSheetsSource = source;
         }
         else
         {
-            episode.HotSheets = episode.HotSheets.TrimEnd() + "\n\n" + text;
+            // Hot Sheets added before the layout was kept are only words: they become a paragraph above.
+            var before = episode.HasHotSheetsLayout
+                ? episode.HotSheetBlocks.ToList()
+                : [HotSheetBlock.Paragraph(episode.HotSheets.Trim())];
+            episode.HotSheetBlocks = new(before.Append(HotSheetBlock.Rule()).Concat(blocks));
             episode.HotSheetsSource = episode.HotSheetsSource + "\n" + source;
         }
+        episode.RefreshHotSheetsText();
 
         await SaveAsync();
         StatusText = "Hot Sheets added. Check them over, then press ✓ Done.";
@@ -1103,6 +1112,7 @@ public partial class MainViewModel : ObservableObject
                 "Clear", "Cancel"))
             return;
         episode.HotSheets = "";
+        episode.HotSheetBlocks = new();
         episode.HotSheetsSource = "";
         await SaveAsync();
     }

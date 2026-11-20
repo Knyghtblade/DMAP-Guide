@@ -31,7 +31,12 @@
             <c:AddButton Text="✕ Clear Hot Sheets" Clicked="OnClear"/>
         </HorizontalStackLayout>
 
-        <c:InkEditor Text="{Binding Episode.HotSheets}" Placeholder="No Hot Sheets yet. Press Edit Page, then + Add Hot Sheets PDF." MinimumHeightRequest="160"/>
+        <!-- Laid out as in the PDF: title, bold lines, dividers and tables, all editable -->
+        <c:HotSheetLayout IsVisible="{Binding Episode.HasHotSheetsLayout}"/>
+
+        <!-- Hot Sheets added before the layout was kept: just their words -->
+        <c:InkEditor Text="{Binding Episode.HotSheets}" Placeholder="No Hot Sheets yet. Press Edit Page, then + Add Hot Sheets PDF." MinimumHeightRequest="160"
+                     IsVisible="{Binding Episode.HasHotSheetsLayout, Converter={StaticResource Not}}"/>
 
         <c:TomeButton Text="← Back to the episode" Margin="0,16,0,0" HorizontalOptions="Start" Clicked="OnBack"/>
     </VerticalStackLayout>

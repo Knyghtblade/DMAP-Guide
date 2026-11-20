@@ -58,6 +58,17 @@ Do the technical work; describe the result and what to do next. Anything written
   the typed text onto the page, where it can be corrected; "Clear Hot Sheets" empties it. Made on
   the `hot-sheets` branch (from 1.0.9) on another PC and merged; this PC added the Mac screen
   (`HotSheetsView`) and Hot Sheets on web-copy episode pages.
+- 1.0.11 (20 Nov): Hot Sheets **keep the PDF's layout, editable** (Paul chose this over showing the
+  pages as pictures). `DmapShared\HotSheetReader.cs` rebuilds the PDF as `HotSheetBlock`s
+  (`Models\HotSheet.cs`): Title/Heading/Bold/Body paragraphs from font size and weight, dividers
+  from lone lines, tables from the drawn cell borders (spans, shaded rows, alignment), side-by-side
+  text as border-less tables; paragraphs and tables carry over page breaks. Saved on the episode as
+  `HotSheetBlocks`; `HotSheets` keeps just the words (refreshed on every save). Hot Sheets with no
+  blocks (added with 1.0.10) still show as plain text. Checked against Paul's real
+  "DM 1110 Hot Sheets.docx.pdf" (Downloads; real production data, so not in the repo): all 212
+  timecode rows and 2,532 words kept. Windows `Controls\HotSheetTable.cs`, Mac `Controls\HotSheetLayout.cs`.
+- When testing on Paul's PC, it's in use: don't send real mouse or keyboard input. Press buttons
+  through UI Automation and capture with PrintWindow (a click once went into his browser).
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe

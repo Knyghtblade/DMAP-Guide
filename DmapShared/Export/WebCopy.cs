@@ -361,8 +361,61 @@ public static class WebCopy
 
         w.Text("Production Notes", e.ProductionNotes);
         w.Text("Shoot Notes", e.ShootNotes);
-        w.Text("Hot Sheets", e.HotSheets);
+        HotSheets(w, e);
         w.Close();
+    }
+
+    /// <summary>The Hot Sheets as laid out in the PDF, or just their words for ones added before the layout was kept.</summary>
+    private static void HotSheets(Writer w, Episode e)
+    {
+        if (e.HotSheetBlocks.Count == 0)
+        {
+            w.Text("Hot Sheets", e.HotSheets);
+            return;
+        }
+
+        w.Section("Hot Sheets");
+        w.Raw("""<div class="hotsheets">""");
+        foreach (var block in e.HotSheetBlocks)
+        {
+            switch (block.Kind)
+            {
+                case HotSheetBlockKind.Rule:
+                    w.Raw("<hr>");
+                    break;
+
+                case HotSheetBlockKind.Table:
+                    var html = new StringBuilder($"""<div class="scroll"><table class="{(block.Bordered ? "grid" : "cols")}"><colgroup>""");
+                    foreach (double width in block.ColumnWidths)
+                        html.Append(CultureInfo.InvariantCulture, $"""<col style="width:{width * 100:F1}%">""");
+                    html.Append("</colgroup>");
+                    foreach (var row in block.Rows)
+                    {
+                        html.Append(row.Shaded ? """<tr class="shade">""" : "<tr>");
+                        foreach (var cell in row.Cells)
+                        {
+                            string span = cell.Span > 1 ? $""" colspan="{cell.Span}" """ : " ";
+                            string align = cell.Align == HotSheetAlign.Left ? "" : $"""style="text-align:{cell.Align.ToString().ToLowerInvariant()}" """;
+                            html.Append($"""<td{span}{align}{(cell.Bold ? """class="b" """ : "")}>{H(cell.Text).Replace("\n", "<br>")}</td>""");
+                        }
+                        html.Append("</tr>");
+                    }
+                    w.Raw(html.Append("</table></div>").ToString());
+                    break;
+
+                default:
+                    string text = H(block.Text.Trim()).Replace("\n", "<br>");
+                    w.Raw(block.Style switch
+                    {
+                        HotSheetStyle.Title => $"""<p class="t">{text}</p>""",
+                        HotSheetStyle.Heading => $"""<p class="h">{text}</p>""",
+                        HotSheetStyle.Bold => $"""<p class="b">{text}</p>""",
+                        _ => $"<p>{text}</p>"
+                    });
+                    break;
+            }
+        }
+        w.Raw("</div>");
     }
 
     // ============================================================
@@ -598,6 +651,12 @@ public static class WebCopy
         .page{max-width:960px}
         .kicker{font:12px Cinzel,serif;letter-spacing:.15em;text-transform:uppercase;color:var(--faded)}
         .subtitle{font:20px Cinzel,serif;color:var(--soft);margin:-4px 0 6px 2px}
+        .hotsheets p{margin:0 0 10px}.hotsheets .t{font:700 24px Cinzel,serif;text-align:center;margin:6px 0 14px}
+        .hotsheets .h{font:700 17px Cinzel,serif}.hotsheets .b{font-weight:600}
+        .hotsheets hr{border:0;border-top:1px solid var(--faded);margin:12px 0 14px}
+        .hotsheets .scroll{overflow-x:auto;margin:6px 0 14px}.hotsheets table{width:100%;min-width:420px;border-collapse:collapse;font-size:15px}
+        .hotsheets .grid td{border:1px solid rgba(135,106,69,.6);padding:4px 7px;vertical-align:middle}
+        .hotsheets .cols td{padding:1px 14px 1px 0;font-weight:inherit}.hotsheets tr.shade td{background:rgba(135,106,69,.15)}
         .nav small{font-size:.85em;font-weight:normal}
         h1{font:700 34px/1.2 "Cinzel Decorative","Palatino Linotype",serif;color:var(--rubric);margin:4px 0 0}
         h2{font:700 19px Cinzel,serif;color:var(--soft);border-bottom:1px solid var(--gold);padding-bottom:3px;margin:28px 0 12px}

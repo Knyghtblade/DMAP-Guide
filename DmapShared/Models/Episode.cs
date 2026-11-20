@@ -54,8 +54,26 @@ public partial class Episode : TreeNode
     /// <summary>The "Shoot Notes" page opened from the episode (not saved on its own; the notes live on the episode).</summary>
     [JsonIgnore] public ShootNotesPage ShootNotesPage { get; }
 
-    /// <summary>The words from this episode's Hot Sheets PDF, kept (and editable) on its own Hot Sheets page.</summary>
+    /// <summary>
+    /// The words from this episode's Hot Sheets PDF. With a layout (below) it's just their words,
+    /// kept for searching and for older apps; Hot Sheets added before the layout was kept are only this.
+    /// </summary>
     [ObservableProperty] private string _hotSheets = "";
+
+    /// <summary>The Hot Sheets laid out as in the PDF (title, bold lines, dividers, tables), editable on the Hot Sheets page.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasHotSheetsLayout))]
+    private ObservableCollection<HotSheetBlock> _hotSheetBlocks = new();
+
+    [JsonIgnore] public bool HasHotSheetsLayout => HotSheetBlocks.Count > 0;
+
+    /// <summary>Bring the plain words up to date with any edits to the laid-out Hot Sheets.</summary>
+    public void RefreshHotSheetsText()
+    {
+        if (HotSheetBlocks.Count == 0) return;
+        string text = HotSheetBlock.PlainText(HotSheetBlocks);
+        if (text != HotSheets) HotSheets = text;
+    }
 
     /// <summary>Where the Hot Sheets came from, e.g. "Ep 301 Hot Sheets.pdf · added 20 Nov 2026 by Paul". Blank once cleared.</summary>
     [ObservableProperty] private string _hotSheetsSource = "";

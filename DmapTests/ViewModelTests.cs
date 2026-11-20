@@ -533,13 +533,15 @@ public class ViewModelTests
         Assert.DoesNotContain("Call time", episode.HotSheets);
         Assert.StartsWith("Revised.pdf", episode.HotSheetsSource);
 
-        // Edited by hand, then saved for everyone.
-        episode.HotSheets += "\nBring the dragon.";
+        // Edited by hand (the laid-out text), then saved for everyone, layout and all.
+        Assert.True(episode.HasHotSheetsLayout);
+        episode.HotSheetBlocks.First(b => b.Kind == HotSheetBlockKind.Text).Text += "\nBring the dragon.";
         await vm.ToggleEditCommand.ExecuteAsync(null);
         await vm.SaveAsync();
         var check = new DmapShared.Storage.ServerGuideStore(server.Client(), "Check", TempFolder.Create("c"));
         var saved = (await check.LoadAsync()).Data.AllEpisodes.Single(e => e.Id == episode.Id);
         Assert.Contains("Bring the dragon.", saved.HotSheets);
+        Assert.Contains("Bring the dragon.", saved.HotSheetBlocks.Single().Text);
         Assert.StartsWith("Revised.pdf", saved.HotSheetsSource);
 
         // Cleared.
@@ -547,6 +549,27 @@ public class ViewModelTests
         await vm.ClearHotSheetsCommand.ExecuteAsync(episode);
         Assert.Equal("", episode.HotSheets);
         Assert.Equal("", episode.HotSheetsSource);
+        Assert.False(episode.HasHotSheetsLayout);
+    }
+
+    [Fact]
+    public async Task Hot_sheets_from_before_the_layout_are_kept_when_a_pdf_is_added_underneath()
+    {
+        using var server = new TestServer();
+        var (vm, platform) = await Connected(server);
+        var episode = vm.Data.AllEpisodes.First();
+        episode.HotSheets = "Old notes from 1.0.10";
+        await vm.OpenHotSheetsCommand.ExecuteAsync(episode);
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+
+        platform.Answer = false; // add underneath
+        platform.PdfToPick = MakePdf("New.pdf", "Call time 8:00 AM");
+        await vm.AddHotSheetsCommand.ExecuteAsync(episode);
+
+        Assert.Equal("Old notes from 1.0.10", episode.HotSheetBlocks[0].Text);
+        Assert.Equal(HotSheetBlockKind.Rule, episode.HotSheetBlocks[1].Kind);
+        Assert.Contains("Old notes from 1.0.10", episode.HotSheets);
+        Assert.Contains("Call time 8:00 AM", episode.HotSheets);
     }
 
     [Fact]
