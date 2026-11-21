@@ -566,11 +566,56 @@
                         CommandParameter="{Binding Episode}"/>
             </StackPanel>
 
+            <!-- One PDF for two episodes (502 & 503): say so, and offer to keep only this one's parts -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,14" Padding="14,10"
+                    Visibility="{Binding CoversOtherEpisodes, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource Body}" FontSize="15" TextWrapping="Wrap" Foreground="{StaticResource RubricBrush}"
+                               Text="{Binding OtherEpisodesNote}"/>
+                    <Button Style="{StaticResource AddButton}" Content="{Binding KeepOnlyLabel}" HorizontalAlignment="Left" Margin="0,8,0,0"
+                            Command="{Binding DataContext.KeepOnlyThisEpisodeHotSheetsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                            CommandParameter="{Binding Episode}"/>
+                </StackPanel>
+            </Border>
+
+            <TextBlock Style="{StaticResource Body}" FontSize="14" FontStyle="Italic" Foreground="{StaticResource InkFadedBrush}"
+                       Margin="2,0,0,10" TextWrapping="Wrap"
+                       Text="Click into any words to correct them. ✕ removes that paragraph, divider or line of a table; ✕ Remove section removes an episode's heading or box and everything under it, up to the next one.">
+                <TextBlock.Visibility>
+                    <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                        <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                        <Binding Path="Episode.HasHotSheetsLayout"/>
+                    </MultiBinding>
+                </TextBlock.Visibility>
+            </TextBlock>
+
             <!-- Laid out as in the PDF: title, bold lines, dividers and tables, all editable -->
             <ItemsControl ItemsSource="{Binding Episode.HotSheetBlocks}" Focusable="False" Margin="0,4,0,0"
                           Visibility="{Binding Episode.HasHotSheetsLayout, Converter={StaticResource BoolToVis}}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type m:HotSheetBlock}">
+                      <StackPanel>
+                        <!-- An episode's overview heading or box: remove it and what's under it -->
+                        <Button Style="{StaticResource AddButton}" Content="✕ Remove section" HorizontalAlignment="Right" Margin="0,4,0,2"
+                                ToolTip="Remove this heading or box and everything under it, up to the next one"
+                                Command="{Binding DataContext.RemoveHotSheetSectionCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}">
+                            <Button.Visibility>
+                                <MultiBinding Converter="{StaticResource AllTrueToVis}">
+                                    <Binding Path="DataContext.IsEditing" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                    <Binding Path="StartsSection"/>
+                                </MultiBinding>
+                            </Button.Visibility>
+                        </Button>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="1" Style="{StaticResource RemoveButton}" Margin="8,2,0,0"
+                                ToolTip="Remove this from the Hot Sheets"
+                                Command="{Binding DataContext.RemoveHotSheetBlockCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"/>
                         <ContentControl Content="{Binding}" Focusable="False">
                             <ContentControl.Style>
                                 <Style TargetType="ContentControl">
@@ -627,6 +672,8 @@
                                 </Style>
                             </ContentControl.Style>
                         </ContentControl>
+                      </Grid>
+                      </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

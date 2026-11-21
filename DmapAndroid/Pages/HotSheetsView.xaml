@@ -31,6 +31,14 @@
             <c:AddButton Text="✕ Clear Hot Sheets" Clicked="OnClear"/>
         </HorizontalStackLayout>
 
+        <!-- One PDF for two episodes (502 & 503): say so, and offer to keep only this one's parts -->
+        <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="12,8" IsVisible="{Binding CoversOtherEpisodes}">
+            <VerticalStackLayout Spacing="6">
+                <Label Style="{StaticResource Body}" FontSize="14" TextColor="{StaticResource RubricColor}" Text="{Binding OtherEpisodesNote}"/>
+                <c:AddButton Text="{Binding KeepOnlyLabel}" HorizontalOptions="Start" Margin="0" Clicked="OnKeepOnly"/>
+            </VerticalStackLayout>
+        </Border>
+
         <!-- Laid out as in the PDF: title, bold lines, dividers and tables, all editable -->
         <c:HotSheetLayout IsVisible="{Binding Episode.HasHotSheetsLayout}"/>
 

@@ -233,8 +233,53 @@ public class ShootNotesPage : EpisodeSubPage
 /// <summary>Page node for an episode's Hot Sheets (the text read from the Hot Sheets PDF).</summary>
 public class HotSheetsPage : EpisodeSubPage
 {
-    public HotSheetsPage(Episode episode) : base(episode) { }
+    private ObservableCollection<HotSheetBlock>? _watched;
+
+    public HotSheetsPage(Episode episode) : base(episode)
+    {
+        episode.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(Episode.HotSheetBlocks) or nameof(Episode.Number)) Refresh();
+        };
+        Refresh();
+    }
+
     public override string DisplayName => "Hot Sheets";
+
+    /// <summary>The sheet also covers another episode (502 &amp; 503 on one PDF), so "Keep only" is offered.</summary>
+    public bool CoversOtherEpisodes => DmapShared.HotSheetEpisodes.CoversOtherEpisodes(Episode.HotSheetBlocks, Episode.Number);
+
+    /// <summary>"✂ Keep only Episode 502's parts", for the button.</summary>
+    public string KeepOnlyLabel => $"✂ Keep only Episode {Episode.Number}'s parts";
+
+    /// <summary>"This sheet also covers Episode 503. …", for the note above the sheet.</summary>
+    public string OtherEpisodesNote
+    {
+        get
+        {
+            var others = DmapShared.HotSheetEpisodes.EpisodesIn(Episode.HotSheetBlocks).Where(n => n != Episode.Number).ToList();
+            return others.Count == 0 ? "" :
+                $"This sheet also covers Episode {string.Join(" & ", others)}. Press Edit Page, then the button below, " +
+                $"to take out the parts that aren't Episode {Episode.Number}.";
+        }
+    }
+
+    /// <summary>The blocks or rows changed: re-mark the sections and the "also covers" note.</summary>
+    public void Refresh()
+    {
+        if (!ReferenceEquals(_watched, Episode.HotSheetBlocks))
+        {
+            if (_watched != null) _watched.CollectionChanged -= OnBlocksChanged;
+            _watched = Episode.HotSheetBlocks;
+            _watched.CollectionChanged += OnBlocksChanged;
+        }
+        DmapShared.HotSheetEpisodes.MarkSections(Episode.HotSheetBlocks);
+        OnPropertyChanged(nameof(CoversOtherEpisodes));
+        OnPropertyChanged(nameof(KeepOnlyLabel));
+        OnPropertyChanged(nameof(OtherEpisodesNote));
+    }
+
+    private void OnBlocksChanged(object? sender, NotifyCollectionChangedEventArgs e) => Refresh();
 }
 
 /// <summary>A character and the cast member who plays them (campaign cast list, a guest star, or the show's cast).</summary>

@@ -14,6 +14,8 @@ public sealed class HotSheetLayout : ContentView
     private static readonly Color Shade = Color.FromRgba(0x87, 0x6A, 0x45, 0x26);
 
     private Episode? _episode;
+    private System.Collections.Specialized.INotifyCollectionChanged? _blocks;
+    private readonly List<System.Collections.Specialized.INotifyCollectionChanged> _rows = new();
 
     protected override void OnBindingContextChanged()
     {
@@ -29,17 +31,48 @@ public sealed class HotSheetLayout : ContentView
         if (e.PropertyName == nameof(Episode.HotSheetBlocks)) Build();
     }
 
+    // Something was removed (a ✕, Remove section, Keep only): set the sheet out again.
+    private void OnRemoved(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Dispatcher.Dispatch(Build);
+
     private void Build()
     {
+        if (_blocks != null) _blocks.CollectionChanged -= OnRemoved;
+        foreach (var rows in _rows) rows.CollectionChanged -= OnRemoved;
+        _rows.Clear();
+        _blocks = _episode?.HotSheetBlocks;
+        if (_blocks != null) _blocks.CollectionChanged += OnRemoved;
+
         var stack = new VerticalStackLayout { Spacing = 4 };
         if (_episode != null)
             foreach (var block in _episode.HotSheetBlocks)
-                stack.Children.Add(block.Kind switch
+            {
+                if (block.Kind == HotSheetBlockKind.Table)
+                {
+                    block.Rows.CollectionChanged += OnRemoved;
+                    _rows.Add(block.Rows);
+                }
+
+                // An episode's overview heading or box: remove it and everything under it.
+                if (block.StartsSection)
+                {
+                    var section = new AddButton { Text = "✕ Remove section", HorizontalOptions = LayoutOptions.End, Margin = new Thickness(0, 4, 0, 2) };
+                    section.Clicked += (_, _) => AppState.Main.RemoveHotSheetSectionCommand.Execute(block);
+                    stack.Children.Add(section);
+                }
+
+                View view = block.Kind switch
                 {
                     HotSheetBlockKind.Rule => new BoxView { HeightRequest = 1, Color = Tome.InkFaded, Margin = new Thickness(0, 8, 0, 10) },
                     HotSheetBlockKind.Table => Table(block),
                     _ => Paragraph(block)
-                });
+                };
+                var remove = new RemoveButton { Margin = new Thickness(6, 2, 0, 0) };
+                remove.Clicked += (_, _) => AppState.Main.RemoveHotSheetBlockCommand.Execute(block);
+                var line = new Grid { ColumnDefinitions = { new ColumnDefinition(GridLength.Star), new ColumnDefinition(GridLength.Auto) } };
+                line.Add(view, 0, 0);
+                line.Add(remove, 1, 0);
+                stack.Children.Add(line);
+            }
         Content = stack;
     }
 
@@ -114,7 +147,16 @@ public sealed class HotSheetLayout : ContentView
                 Grid.SetColumnSpan(box, span);
                 column += span;
             }
+
+            // A ✕ at the end of each row (one timeline line) removes just that row.
+            if (table.Bordered && table.Rows.Count > 1)
+            {
+                var remove = new RemoveButton { Margin = new Thickness(4, 0, 0, 0), VerticalOptions = LayoutOptions.Center };
+                remove.Clicked += (_, _) => AppState.Main.RemoveHotSheetRowCommand.Execute(row);
+                grid.Add(remove, table.ColumnWidths.Count, r);
+            }
         }
+        if (table.Bordered && table.Rows.Count > 1) grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Auto));
         return new Border
         {
             Content = grid,

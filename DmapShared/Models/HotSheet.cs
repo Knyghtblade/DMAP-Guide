@@ -36,6 +36,11 @@ public partial class HotSheetBlock : ObservableObject
 
     public ObservableCollection<HotSheetRow> Rows { get; set; } = new();
 
+    /// <summary>Starts a section (an episode's overview heading or its box), so the page offers "Remove section". Not saved.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool _startsSection;
+
     public static HotSheetBlock Paragraph(string text, HotSheetStyle style = HotSheetStyle.Body) =>
         new() { Kind = HotSheetBlockKind.Text, Style = style, Text = text };
 

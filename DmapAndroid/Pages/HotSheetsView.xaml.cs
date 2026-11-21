@@ -11,5 +11,6 @@ public partial class HotSheetsView : ContentView
 
     private void OnAdd(object? sender, EventArgs e) => AppState.Main.AddHotSheetsCommand.Execute(Page.Episode);
     private void OnClear(object? sender, EventArgs e) => AppState.Main.ClearHotSheetsCommand.Execute(Page.Episode);
+    private void OnKeepOnly(object? sender, EventArgs e) => AppState.Main.KeepOnlyThisEpisodeHotSheetsCommand.Execute(Page.Episode);
     private void OnBack(object? sender, EventArgs e) => AppState.Main.CloseHotSheetsCommand.Execute(Page);
 }

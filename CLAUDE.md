@@ -14,7 +14,8 @@ Do the technical work; describe the result and what to do next. Anything written
   phone app still shares `DmapShared`, so keep it compiling and give it the same features
   (buttons, warnings) when a change is cheap, so the two stay identical.
 - Build the shared folder with `Publish Shared App.cmd` (bumps the version, see below). Only the
-  new exe and READ ME.txt are copied into OneDrive afterwards, never the `guide` folder.
+  new exe and READ ME.txt are copied into OneDrive afterwards, never the `guide` folder (see the
+  20 Nov incident below). Pull from GitHub first.
 
 ## Where the shared guide lives on Paul's home PC
 `C:\Users\PaulE\OneDrive - Hasbro Inc\DMAP Guide\Dungeon Masters Production Guide\`
@@ -67,8 +68,29 @@ Do the technical work; describe the result and what to do next. Anything written
   blocks (added with 1.0.10) still show as plain text. Checked against Paul's real
   "DM 1110 Hot Sheets.docx.pdf" (Downloads; real production data, so not in the repo): all 212
   timecode rows and 2,532 words kept. Windows `Controls\HotSheetTable.cs`, Mac `Controls\HotSheetLayout.cs`.
+- **20 Nov incident, home PC.** That PC was still on 1.0.9 + the old `hot-sheets` branch; Paul
+  published from it (1.0.6!) and copied the whole `publish\DMAP Guide` folder into OneDrive,
+  including a stale 18 Oct `guide` folder the old script had left there. Every page changed since
+  18 Oct was overwritten and the 1.0.11 exe replaced. Recovered the same day with OneDrive
+  "Restore your OneDrive" to just before 4:31 pm; checked file by file afterwards. The publish
+  script now never leaves a `guide` folder in its output, refuses to build a version not newer
+  than the shared guide's `app-version.txt`, and says to copy only the exe and READ ME.
+  **Always pull from GitHub before building or publishing on either PC.** The old `hot-sheets`
+  branch (commit 313aa8a, a plain-text trim) is superseded; don't merge it.
+- 1.0.12 (20 Nov): **two episodes on one Hot Sheets PDF** (502 & 503 onwards). `HotSheetEpisodes.cs`
+  works out each block's episode from the layout: overview headings ("OVERVIEW:\n502", "503"),
+  episode boxes (a table titled "Marching Orders-#502", or a LOCATION table whose SYNOPSIS names it)
+  and timeline rows (second column). The page says "This sheet also covers Episode 503" with
+  "✂ Keep only Episode 502's parts"; adding such a PDF offers the same. While editing, every block
+  has a ✕, every row of a drawn table has a ✕, and headings/boxes have "✕ Remove section" (up to the
+  next section or divider). Same on the Mac screen. Checked on copies of Paul's real 502–507 sheets:
+  every timeline row stayed with its episode.
 - When testing on Paul's PC, it's in use: don't send real mouse or keyboard input. Press buttons
   through UI Automation and capture with PrintWindow (a click once went into his browser).
+  The book cover ignores posted clicks; instead a throwaway WPF harness can reference DmapGuide,
+  link its `Fonts`/`Assets` as resources, open `MainWindow` with `--data <copy of the guide>`,
+  call `OpenCover` by reflection, drive the view model and save pictures with RenderTargetBitmap.
+  Always on a copy of the guide, never the shared one.
 
 ## What the shipped app checks and shows
 - Published (single-file) build only: refuses to open unless a `guide` folder sits beside the exe

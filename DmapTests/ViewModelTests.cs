@@ -587,6 +587,146 @@ public class ViewModelTests
         Assert.Contains(platform.Alerts, a => a.Contains("No words could be found"));
     }
 
+    // ------------------------------------------------------------
+    // Two episodes on one Hot Sheets PDF (502 & 503 onwards)
+    // ------------------------------------------------------------
+
+    private static HotSheetBlock Table(params string[][] rows)
+    {
+        var table = new HotSheetBlock { Kind = HotSheetBlockKind.Table, ColumnWidths = [0.2, 0.1, 0.7] };
+        foreach (var cells in rows)
+        {
+            var row = new HotSheetRow();
+            foreach (var text in cells) row.Cells.Add(new HotSheetCell { Text = text, Span = cells.Length == 1 ? 3 : 1 });
+            table.Rows.Add(row);
+        }
+        return table;
+    }
+
+    /// <summary>Laid out like the real double sheets, as the PDF reader rebuilds them.</summary>
+    private static List<HotSheetBlock> TwoEpisodeSheet() =>
+    [
+        HotSheetBlock.Paragraph("Dungeon Masters 502 & 503", HotSheetStyle.Title),
+        HotSheetBlock.Paragraph("Date: 11/11/2026\nProducers: Ella, Burke", HotSheetStyle.Bold),
+        HotSheetBlock.Rule(),
+        HotSheetBlock.Paragraph("OVERVIEW:\n502", HotSheetStyle.Bold),
+        HotSheetBlock.Paragraph("The group is guided to the dorms."),
+        HotSheetBlock.Paragraph("THE PROPHET gives a speech."),
+        HotSheetBlock.Paragraph("503", HotSheetStyle.Bold),
+        HotSheetBlock.Paragraph("ILAFOR slips away to the Aludel."),
+        HotSheetBlock.Paragraph("They arrive at the city gate."),
+        HotSheetBlock.Rule(),
+        Table(["Marching Orders-#502"], ["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Stage #2", "Jasmine", ""], ["SYNOPSIS: 502.\nThe group prepares."]),
+        Table(["10:43:25:06", "502", "start"], ["10:44:00:14", "502", "LLP retreats"], ["13:44:20:15", "502", "break lunch"]),
+        // 507's box came out of the PDF in two pieces: its title alone, then LOCATION / SYNOPSIS.
+        Table(["Nibenay’s Bargain- 503"]),
+        Table(["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Stage #3", "Jasmine", ""], ["SYNOPSIS: 503\nThe party journeys."]),
+        Table(["15:57:26:21", "503", "PICKUP end of 502."], ["16:00:14:01", "503", "THO startles MARTHA"], ["18:57:35:19", "503", "end"]),
+    ];
+
+    private static string Words(IEnumerable<HotSheetBlock> blocks) => HotSheetBlock.PlainText(blocks);
+
+    [Fact]
+    public void A_two_episode_hot_sheet_keeps_only_the_chosen_episode()
+    {
+        Assert.Equal([502, 503], DmapShared.HotSheetEpisodes.EpisodesIn(TwoEpisodeSheet()));
+        Assert.True(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(TwoEpisodeSheet(), 503));
+        Assert.False(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(TwoEpisodeSheet(), 504));
+
+        string only502 = Words(DmapShared.HotSheetEpisodes.KeepOnly(TwoEpisodeSheet(), 502));
+        Assert.StartsWith("Dungeon Masters 502\n\nDate: 11/11/2026", only502);
+        Assert.Contains("OVERVIEW:\n502", only502);
+        Assert.Contains("THE PROPHET gives a speech.", only502);
+        Assert.Contains("SYNOPSIS: 502.", only502);
+        Assert.Contains("13:44:20:15   502   break lunch", only502);
+        Assert.DoesNotContain("ILAFOR slips away", only502);
+        Assert.DoesNotContain("Nibenay’s Bargain", only502);
+        Assert.DoesNotContain("SYNOPSIS: 503", only502);
+        Assert.DoesNotContain("   503   ", only502);
+        Assert.DoesNotContain("Stage #3", only502);
+
+        var kept503 = DmapShared.HotSheetEpisodes.KeepOnly(TwoEpisodeSheet(), 503);
+        string only503 = Words(kept503);
+        Assert.StartsWith("Dungeon Masters 503\n", only503);
+        Assert.Contains("OVERVIEW:\n\n503", only503);   // the OVERVIEW label stays, without 502's number
+        Assert.Contains("They arrive at the city gate.", only503);
+        Assert.Contains("Nibenay’s Bargain- 503", only503);
+        Assert.Contains("SYNOPSIS: 503", only503);
+        Assert.Contains("PICKUP end of 502.", only503);   // tagged 503, so it stays (remove it by hand if wanted)
+        Assert.DoesNotContain("The group is guided", only503);
+        Assert.DoesNotContain("Marching Orders", only503);
+        Assert.DoesNotContain("   502   ", only503);
+        Assert.False(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(kept503, 503)); // nothing left to take out
+        Assert.DoesNotContain(kept503.Zip(kept503.Skip(1)), p => p.First.Kind == HotSheetBlockKind.Rule && p.Second.Kind == HotSheetBlockKind.Rule);
+
+        // A single-episode sheet is left alone (its timeline is tagged "1", not "501").
+        List<HotSheetBlock> single =
+        [
+            HotSheetBlock.Paragraph("Dungeon Masters 501", HotSheetStyle.Title),
+            HotSheetBlock.Paragraph("OVERVIEW:\n501", HotSheetStyle.Bold),
+            HotSheetBlock.Paragraph("Story."),
+            Table(["18:44:51:05", "1", "end ep"], ["18:45:00:00", "1", "wrap"]),
+        ];
+        Assert.False(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(single, 501));
+        Assert.Equal(single, DmapShared.HotSheetEpisodes.KeepOnly(single, 501));
+    }
+
+    [Fact]
+    public async Task Hot_sheets_for_two_episodes_can_be_trimmed_and_pieces_removed_by_hand()
+    {
+        using var server = new TestServer();
+        var (vm, platform) = await Connected(server);
+        var episode = vm.Data.AllEpisodes.First();
+        episode.Number = 503;
+        episode.HotSheetBlocks = new(TwoEpisodeSheet());
+        episode.RefreshHotSheetsText();
+        var page = episode.HotSheetsPage;
+
+        await vm.OpenHotSheetsCommand.ExecuteAsync(episode);
+        Assert.True(page.CoversOtherEpisodes);
+        Assert.Contains("Episode 502", page.OtherEpisodesNote);
+        Assert.Equal("✂ Keep only Episode 503's parts", page.KeepOnlyLabel);
+        // "Remove section" is offered on each overview heading and each episode box (507's two-piece box once).
+        Assert.Equal(4, episode.HotSheetBlocks.Count(b => b.StartsSection));
+
+        // Not while reading.
+        await vm.KeepOnlyThisEpisodeHotSheetsCommand.ExecuteAsync(episode);
+        Assert.Contains("The group is guided", episode.HotSheets);
+
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        platform.Answer = true;
+        await vm.KeepOnlyThisEpisodeHotSheetsCommand.ExecuteAsync(episode);
+        Assert.DoesNotContain("The group is guided", episode.HotSheets);
+        Assert.False(page.CoversOtherEpisodes);
+        Assert.Equal("", page.OtherEpisodesNote);
+
+        // ✕ on one timeline line.
+        var timeline = episode.HotSheetBlocks.Single(b => b.Rows.Any(r => r.Cells.Count == 3 && r.Cells[2].Text == "end"));
+        vm.RemoveHotSheetRowCommand.Execute(timeline.Rows.Single(r => r.Cells[2].Text.StartsWith("PICKUP")));
+        Assert.DoesNotContain("PICKUP end of 502", episode.HotSheets);
+        Assert.Equal(2, timeline.Rows.Count);
+
+        // ✕ on a paragraph.
+        vm.RemoveHotSheetBlockCommand.Execute(episode.HotSheetBlocks.Single(b => b.Text == "They arrive at the city gate."));
+        Assert.DoesNotContain("city gate", episode.HotSheets);
+
+        // "Remove section" on the overview's 503 heading takes its paragraphs and stops at the divider.
+        var heading = episode.HotSheetBlocks.Single(b => b.Text == "503");
+        await vm.RemoveHotSheetSectionCommand.ExecuteAsync(heading);
+        Assert.DoesNotContain("ILAFOR slips away", episode.HotSheets);
+        Assert.Contains("Nibenay’s Bargain- 503", episode.HotSheets);
+        Assert.Contains("THO startles MARTHA", episode.HotSheets);
+
+        // Saved for everyone, with the layout.
+        await vm.ToggleEditCommand.ExecuteAsync(null);
+        await vm.SaveAsync();
+        var check = new DmapShared.Storage.ServerGuideStore(server.Client(), "Check", TempFolder.Create("c"));
+        var saved = (await check.LoadAsync()).Data.AllEpisodes.Single(e => e.Id == episode.Id);
+        Assert.Equal(episode.HotSheets, saved.HotSheets);
+        Assert.Equal(episode.HotSheetBlocks.Count, saved.HotSheetBlocks.Count);
+        Assert.DoesNotContain(saved.HotSheetBlocks.SelectMany(b => b.Rows), r => r.Cells.Any(c => c.Text.StartsWith("PICKUP")));
+    }
+
     [Fact]
     public async Task Delete_on_a_page_that_is_not_a_season_campaign_or_episode_deletes_nothing()
     {

@@ -1081,6 +1081,17 @@ public partial class MainViewModel : ObservableObject
                 "This episode already has Hot Sheets. Replace them with this PDF, or add this PDF underneath?",
                 "Replace", "Add underneath");
 
+        // One PDF for two episodes (502 & 503): offer to keep only this episode's parts.
+        if (HotSheetEpisodes.CoversOtherEpisodes(blocks, episode.Number))
+        {
+            var others = HotSheetEpisodes.EpisodesIn(blocks).Where(n => n != episode.Number);
+            if (await _platform.AskAsync("Add Hot Sheets",
+                    $"This PDF also covers Episode {string.Join(" & ", others)}. Keep only the parts for Episode {episode.Number}? " +
+                    "(Its overview, its synopsis box and its timeline. The title, date and crew are kept.)",
+                    $"Keep only {episode.Number}", "Keep everything"))
+                blocks = HotSheetEpisodes.KeepOnly(blocks, episode.Number);
+        }
+
         string source = $"{Path.GetFileName(file)} · added {DateTime.Now:d MMM yyyy}" +
                         (string.IsNullOrWhiteSpace(UserName) ? "" : $" by {UserName}");
         if (replace)
@@ -1115,6 +1126,75 @@ public partial class MainViewModel : ObservableObject
         episode.HotSheetBlocks = new();
         episode.HotSheetsSource = "";
         await SaveAsync();
+    }
+
+    /// <summary>The sheet covers two episodes (502 &amp; 503): take out the other one's overview, box and timeline.</summary>
+    [RelayCommand]
+    private async Task KeepOnlyThisEpisodeHotSheetsAsync(Episode episode)
+    {
+        if (!IsEditing || !HotSheetEpisodes.CoversOtherEpisodes(episode.HotSheetBlocks, episode.Number)) return;
+        var others = HotSheetEpisodes.EpisodesIn(episode.HotSheetBlocks).Where(n => n != episode.Number);
+        if (!await _platform.AskAsync("Keep only this episode",
+                $"Take out everything on these Hot Sheets that belongs to Episode {string.Join(" & ", others)} " +
+                $"(its overview, its synopsis box and its timeline), keeping only Episode {episode.Number}'s?\n\n" +
+                "This can't be undone, but you can add the PDF again.",
+                "Take them out", "Cancel"))
+            return;
+        episode.HotSheetBlocks = new(HotSheetEpisodes.KeepOnly(episode.HotSheetBlocks, episode.Number));
+        episode.RefreshHotSheetsText();
+        await SaveAsync();
+        StatusText = $"Only Episode {episode.Number}'s Hot Sheets are left. Check them over, then press ✓ Done.";
+    }
+
+    /// <summary>The ✕ beside a paragraph, divider or table on the Hot Sheets page.</summary>
+    [RelayCommand]
+    private void RemoveHotSheetBlock(HotSheetBlock block)
+    {
+        if (!IsEditing || CurrentPage is not HotSheetsPage page) return;
+        page.Episode.HotSheetBlocks.Remove(block);
+        page.Episode.RefreshHotSheetsText();
+    }
+
+    /// <summary>The ✕ beside one row of a Hot Sheets table (one timeline line).</summary>
+    [RelayCommand]
+    private void RemoveHotSheetRow(HotSheetRow row)
+    {
+        if (!IsEditing || CurrentPage is not HotSheetsPage page) return;
+        var table = page.Episode.HotSheetBlocks.FirstOrDefault(b => b.Rows.Contains(row));
+        if (table == null) return;
+        table.Rows.Remove(row);
+        if (table.Rows.Count == 0) page.Episode.HotSheetBlocks.Remove(table);
+        page.Refresh();
+        page.Episode.RefreshHotSheetsText();
+    }
+
+    /// <summary>"Remove section" beside a heading or episode box: it and everything under it, up to the next section or divider.</summary>
+    [RelayCommand]
+    private async Task RemoveHotSheetSectionAsync(HotSheetBlock start)
+    {
+        if (!IsEditing || CurrentPage is not HotSheetsPage page) return;
+        var blocks = page.Episode.HotSheetBlocks;
+        var section = HotSheetEpisodes.SectionOf(blocks, start);
+        if (section.Count == 0) return;
+
+        string name = start.Kind == HotSheetBlockKind.Table
+            ? start.Rows.FirstOrDefault()?.Cells.FirstOrDefault()?.Text.Trim() ?? "this section"
+            : start.Text.Trim().Replace("\n", " ");
+        int paragraphs = section.Count(b => b.Kind == HotSheetBlockKind.Text) - (start.Kind == HotSheetBlockKind.Text ? 1 : 0);
+        int lines = section.Where(b => b.Kind == HotSheetBlockKind.Table && b != start).Sum(b => b.Rows.Count);
+        string under = string.Join(" and ", new[]
+        {
+            paragraphs > 0 ? $"{paragraphs} paragraph{(paragraphs == 1 ? "" : "s")}" : null,
+            lines > 0 ? $"{lines} table line{(lines == 1 ? "" : "s")}" : null
+        }.Where(s => s != null));
+        if (!await _platform.AskAsync("Remove section",
+                $"Remove \"{name}\"{(under.Length > 0 ? $" and the {under} under it" : "")}, up to the next section?",
+                "Remove", "Cancel"))
+            return;
+
+        var keep = blocks.Where(b => !section.Contains(b)).ToList();
+        page.Episode.HotSheetBlocks = new(keep);
+        page.Episode.RefreshHotSheetsText();
     }
 
     // ============================================================

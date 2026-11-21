@@ -16,11 +16,22 @@ public sealed class HotSheetTable : ContentControl
     private static readonly Brush Line = Frozen(Color.FromArgb(0x99, 0x87, 0x6A, 0x45));
     private static readonly Brush Shade = Frozen(Color.FromArgb(0x26, 0x87, 0x6A, 0x45));
 
+    private HotSheetBlock? _table;
+
     public HotSheetTable()
     {
         Focusable = false;
-        DataContextChanged += (_, _) => Build();
+        DataContextChanged += (_, _) =>
+        {
+            if (_table != null) _table.Rows.CollectionChanged -= OnRowsChanged;
+            _table = DataContext as HotSheetBlock;
+            if (_table != null) _table.Rows.CollectionChanged += OnRowsChanged;
+            Build();
+        };
     }
+
+    // A row was removed (its ✕, or "Keep only this episode"): set the table out again.
+    private void OnRowsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) => Build();
 
     private void Build()
     {
@@ -33,6 +44,13 @@ public sealed class HotSheetTable : ContentControl
         var grid = new Grid();
         foreach (double width in table.ColumnWidths)
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(width, 0.02), GridUnitType.Star) });
+
+        // While editing, a ✕ at the end of each row (one timeline line) removes just that row.
+        // (Only on drawn tables, the timelines and episode boxes; side-by-side crew lines use the block's own ✕.)
+        bool rowButtons = table.Bordered && table.Rows.Count > 1;
+        int buttonColumn = table.ColumnWidths.Count;
+        if (rowButtons) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var removeStyle = TryFindResource("RemoveButton") as Style;
 
         var cellStyle = TryFindResource("InkBoxMulti") as Style;
         for (int r = 0; r < table.Rows.Count; r++)
@@ -71,8 +89,9 @@ public sealed class HotSheetTable : ContentControl
                     Child = box,
                     Background = row.Shaded ? Shade : Brushes.Transparent,
                     BorderBrush = Line,
-                    // Each cell draws its right and bottom lines; the table's outline adds the top and left.
-                    BorderThickness = table.Bordered ? new Thickness(0, 0, 1, 1) : new Thickness(0),
+                    // Each cell draws its right and bottom lines, and the top and left ones along the table's edge
+                    // (so the row ✕ column beside the table has no lines).
+                    BorderThickness = table.Bordered ? new Thickness(column == 0 ? 1 : 0, r == 0 ? 1 : 0, 1, 1) : new Thickness(0),
                     Padding = table.Bordered ? new Thickness(4, 3, 4, 3) : new Thickness(0, 1, 12, 1)
                 };
                 Grid.SetRow(border, r);
@@ -81,15 +100,28 @@ public sealed class HotSheetTable : ContentControl
                 grid.Children.Add(border);
                 column += Math.Max(1, span);
             }
+
+            if (rowButtons)
+            {
+                var remove = new Button
+                {
+                    Style = removeStyle,
+                    Margin = new Thickness(6, 0, 0, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    ToolTip = "Remove this line from the Hot Sheets",
+                    CommandParameter = row
+                };
+                remove.SetBinding(Button.CommandProperty, new Binding("DataContext.RemoveHotSheetRowCommand")
+                {
+                    RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(Window), 1)
+                });
+                Grid.SetRow(remove, r);
+                Grid.SetColumn(remove, buttonColumn);
+                grid.Children.Add(remove);
+            }
         }
 
-        Content = new Border
-        {
-            Child = grid,
-            BorderBrush = Line,
-            BorderThickness = table.Bordered ? new Thickness(1, 1, 0, 0) : new Thickness(0),
-            Margin = new Thickness(0, 6, 0, 10)
-        };
+        Content = new Border { Child = grid, Margin = new Thickness(0, 6, 0, 10) };
     }
 
     private static Brush Frozen(Color color)
