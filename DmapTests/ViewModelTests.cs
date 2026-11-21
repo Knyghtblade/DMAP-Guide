@@ -607,21 +607,21 @@ public class ViewModelTests
     private static List<HotSheetBlock> TwoEpisodeSheet() =>
     [
         HotSheetBlock.Paragraph("Dungeon Masters 502 & 503", HotSheetStyle.Title),
-        HotSheetBlock.Paragraph("Date: 11/11/2026\nProducers: Ella, Burke", HotSheetStyle.Bold),
+        HotSheetBlock.Paragraph("Date: 01/01/2026\nProducers: A. Producer, B. Producer", HotSheetStyle.Bold),
         HotSheetBlock.Rule(),
         HotSheetBlock.Paragraph("OVERVIEW:\n502", HotSheetStyle.Bold),
-        HotSheetBlock.Paragraph("The group is guided to the dorms."),
-        HotSheetBlock.Paragraph("THE PROPHET gives a speech."),
+        HotSheetBlock.Paragraph("The group gathers at the inn."),
+        HotSheetBlock.Paragraph("THE GUIDE gives a speech."),
         HotSheetBlock.Paragraph("503", HotSheetStyle.Bold),
-        HotSheetBlock.Paragraph("ILAFOR slips away to the Aludel."),
-        HotSheetBlock.Paragraph("They arrive at the city gate."),
+        HotSheetBlock.Paragraph("THE ROGUE slips away to the tower."),
+        HotSheetBlock.Paragraph("They reach the bridge."),
         HotSheetBlock.Rule(),
-        Table(["Marching Orders-#502"], ["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Stage #2", "Jasmine", ""], ["SYNOPSIS: 502.\nThe group prepares."]),
-        Table(["10:43:25:06", "502", "start"], ["10:44:00:14", "502", "LLP retreats"], ["13:44:20:15", "502", "break lunch"]),
+        Table(["First Quest-#502"], ["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Set A", "Player", ""], ["SYNOPSIS: 502.\nThe group prepares."]),
+        Table(["10:43:25:06", "502", "start"], ["10:44:00:14", "502", "the party retreats"], ["13:44:20:15", "502", "break lunch"]),
         // 507's box came out of the PDF in two pieces: its title alone, then LOCATION / SYNOPSIS.
-        Table(["Nibenay’s Bargain- 503"]),
-        Table(["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Stage #3", "Jasmine", ""], ["SYNOPSIS: 503\nThe party journeys."]),
-        Table(["15:57:26:21", "503", "PICKUP end of 502."], ["16:00:14:01", "503", "THO startles MARTHA"], ["18:57:35:19", "503", "end"]),
+        Table(["Second Quest- 503"]),
+        Table(["LOCATION", "CAST", "ADD’ CHARACTERS"], ["Set B", "Player", ""], ["SYNOPSIS: 503\nThe party journeys."]),
+        Table(["15:57:26:21", "503", "PICKUP end of 502."], ["16:00:14:01", "503", "the knight startles the cook"], ["18:57:35:19", "503", "end"]),
     ];
 
     private static string Words(IEnumerable<HotSheetBlock> blocks) => HotSheetBlock.PlainText(blocks);
@@ -634,27 +634,27 @@ public class ViewModelTests
         Assert.False(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(TwoEpisodeSheet(), 504));
 
         string only502 = Words(DmapShared.HotSheetEpisodes.KeepOnly(TwoEpisodeSheet(), 502));
-        Assert.StartsWith("Dungeon Masters 502\n\nDate: 11/11/2026", only502);
+        Assert.StartsWith("Dungeon Masters 502\n\nDate: 01/01/2026", only502);
         Assert.Contains("OVERVIEW:\n502", only502);
-        Assert.Contains("THE PROPHET gives a speech.", only502);
+        Assert.Contains("THE GUIDE gives a speech.", only502);
         Assert.Contains("SYNOPSIS: 502.", only502);
         Assert.Contains("13:44:20:15   502   break lunch", only502);
-        Assert.DoesNotContain("ILAFOR slips away", only502);
-        Assert.DoesNotContain("Nibenay’s Bargain", only502);
+        Assert.DoesNotContain("THE ROGUE slips away", only502);
+        Assert.DoesNotContain("Second Quest", only502);
         Assert.DoesNotContain("SYNOPSIS: 503", only502);
         Assert.DoesNotContain("   503   ", only502);
-        Assert.DoesNotContain("Stage #3", only502);
+        Assert.DoesNotContain("Set B", only502);
 
         var kept503 = DmapShared.HotSheetEpisodes.KeepOnly(TwoEpisodeSheet(), 503);
         string only503 = Words(kept503);
         Assert.StartsWith("Dungeon Masters 503\n", only503);
         Assert.Contains("OVERVIEW:\n\n503", only503);   // the OVERVIEW label stays, without 502's number
-        Assert.Contains("They arrive at the city gate.", only503);
-        Assert.Contains("Nibenay’s Bargain- 503", only503);
+        Assert.Contains("They reach the bridge.", only503);
+        Assert.Contains("Second Quest- 503", only503);
         Assert.Contains("SYNOPSIS: 503", only503);
         Assert.Contains("PICKUP end of 502.", only503);   // tagged 503, so it stays (remove it by hand if wanted)
-        Assert.DoesNotContain("The group is guided", only503);
-        Assert.DoesNotContain("Marching Orders", only503);
+        Assert.DoesNotContain("The group gathers", only503);
+        Assert.DoesNotContain("First Quest", only503);
         Assert.DoesNotContain("   502   ", only503);
         Assert.False(DmapShared.HotSheetEpisodes.CoversOtherEpisodes(kept503, 503)); // nothing left to take out
         Assert.DoesNotContain(kept503.Zip(kept503.Skip(1)), p => p.First.Kind == HotSheetBlockKind.Rule && p.Second.Kind == HotSheetBlockKind.Rule);
@@ -691,12 +691,12 @@ public class ViewModelTests
 
         // Not while reading.
         await vm.KeepOnlyThisEpisodeHotSheetsCommand.ExecuteAsync(episode);
-        Assert.Contains("The group is guided", episode.HotSheets);
+        Assert.Contains("The group gathers", episode.HotSheets);
 
         await vm.ToggleEditCommand.ExecuteAsync(null);
         platform.Answer = true;
         await vm.KeepOnlyThisEpisodeHotSheetsCommand.ExecuteAsync(episode);
-        Assert.DoesNotContain("The group is guided", episode.HotSheets);
+        Assert.DoesNotContain("The group gathers", episode.HotSheets);
         Assert.False(page.CoversOtherEpisodes);
         Assert.Equal("", page.OtherEpisodesNote);
 
@@ -707,15 +707,15 @@ public class ViewModelTests
         Assert.Equal(2, timeline.Rows.Count);
 
         // ✕ on a paragraph.
-        vm.RemoveHotSheetBlockCommand.Execute(episode.HotSheetBlocks.Single(b => b.Text == "They arrive at the city gate."));
-        Assert.DoesNotContain("city gate", episode.HotSheets);
+        vm.RemoveHotSheetBlockCommand.Execute(episode.HotSheetBlocks.Single(b => b.Text == "They reach the bridge."));
+        Assert.DoesNotContain("the bridge", episode.HotSheets);
 
         // "Remove section" on the overview's 503 heading takes its paragraphs and stops at the divider.
         var heading = episode.HotSheetBlocks.Single(b => b.Text == "503");
         await vm.RemoveHotSheetSectionCommand.ExecuteAsync(heading);
-        Assert.DoesNotContain("ILAFOR slips away", episode.HotSheets);
-        Assert.Contains("Nibenay’s Bargain- 503", episode.HotSheets);
-        Assert.Contains("THO startles MARTHA", episode.HotSheets);
+        Assert.DoesNotContain("THE ROGUE slips away", episode.HotSheets);
+        Assert.Contains("Second Quest- 503", episode.HotSheets);
+        Assert.Contains("the knight startles the cook", episode.HotSheets);
 
         // Saved for everyone, with the layout.
         await vm.ToggleEditCommand.ExecuteAsync(null);

@@ -79,7 +79,7 @@ Do the technical work; describe the result and what to do next. Anything written
   branch (commit 313aa8a, a plain-text trim) is superseded; don't merge it.
 - 1.0.12 (20 Nov): **two episodes on one Hot Sheets PDF** (502 & 503 onwards). `HotSheetEpisodes.cs`
   works out each block's episode from the layout: overview headings ("OVERVIEW:\n502", "503"),
-  episode boxes (a table titled "Marching Orders-#502", or a LOCATION table whose SYNOPSIS names it)
+  episode boxes (a table titled "First Quest-#502", or a LOCATION table whose SYNOPSIS names it)
   and timeline rows (second column). The page says "This sheet also covers Episode 503" with
   "✂ Keep only Episode 502's parts"; adding such a PDF offers the same. While editing, every block
   has a ✕, every row of a drawn table has a ✕, and headings/boxes have "✕ Remove section" (up to the

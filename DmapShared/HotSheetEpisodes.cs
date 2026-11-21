@@ -6,7 +6,7 @@ namespace DmapShared;
 /// <summary>
 /// From 502 on, one Hot Sheets PDF covers two episodes. Laid out (see <see cref="HotSheetReader"/>) it reads:
 /// the title "Dungeon Masters 502 &amp; 503", the crew, a divider, an OVERVIEW split under "502" and "503"
-/// headings, a divider, then per episode a boxed table ("Marching Orders-#502" / LOCATION / SYNOPSIS: 502)
+/// headings, a divider, then per episode a boxed table ("First Quest-#502" / LOCATION / SYNOPSIS: 502)
 /// and a timeline table whose second column is the episode ("10:43:25:06 | 502 | start").
 /// This works out which episode each paragraph, table and timeline row belongs to, so one episode's
 /// parts can be kept and the rest taken out, and where each section starts (for "Remove section").
@@ -165,7 +165,7 @@ public static partial class HotSheetEpisodes
     }
 
     /// <summary>
-    /// An episode's box: a table whose first row is one cell naming the episode ("Marching Orders-#502",
+    /// An episode's box: a table whose first row is one cell naming the episode ("First Quest-#502",
     /// "Friend or Spy 507"), or a LOCATION / CAST table whose SYNOPSIS names it.
     /// </summary>
     private static int? BoxEpisode(HotSheetBlock block)
